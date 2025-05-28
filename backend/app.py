@@ -1,13 +1,18 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_mysqldb import MySQL
 from flask_jwt_extended import JWTManager, create_access_token
 from werkzeug.security import generate_password_hash, check_password_hash
 from email_validator import validate_email, EmailNotValidError
-import re  # <-- ДОБАВЬ СЮДА!
+import re
 import pymysql
+import os
 
-app = Flask(__name__)
+# Поддержка PyMySQL (если используешь вместо mysqlclient)
+pymysql.install_as_MySQLdb()
+
+# Указываем, что статика (frontend) лежит в папке build
+app = Flask(__name__, static_folder="../frontend/build", static_url_path="/")
 CORS(app, origins=["http://localhost:3000"], supports_credentials=True)
 
 # MySQL config
@@ -22,13 +27,21 @@ app.config['JWT_SECRET_KEY'] = 'super-secret-key'
 mysql = MySQL(app)
 jwt = JWTManager(app)
 
+# Serve React frontend
+@app.route('/')
+def serve_react():
+    return send_from_directory(app.static_folder, 'index.html')
+
+# Handle React routes (e.g., /login, /dashboard) by always returning index.html
+@app.errorhandler(404)
+def not_found(e):
+    return send_from_directory(app.static_folder, 'index.html')
+
+# API Endpoints
 @app.route("/api/hello")
 def hello():
     return jsonify(message="Hello from Flask!")
 
-
-
-@app.route('/api/register', methods=['POST'])
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -39,21 +52,17 @@ def register():
     email = data.get('email', '').strip()
     password = data.get('password', '')
 
-    # Проверка на пустые поля
     if not all([username, email, password]):
         return jsonify(success=False, message="All fields are required."), 400
 
-    # ✅ Проверка: username должен содержать хотя бы одну букву (латиница)
     if not re.search(r'[a-zA-Z]', username):
         return jsonify(success=False, message="Username must contain at least one letter."), 400
 
-    # Email валидация
     try:
         validate_email(email)
     except EmailNotValidError:
         return jsonify(success=False, message="Invalid email address."), 400
 
-    # Проверка пароля по стандарту
     if not re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$', password):
         return jsonify(success=False, message="Password must be at least 8 characters and include uppercase, lowercase letters and a number."), 400
 
@@ -76,8 +85,6 @@ def register():
         else:
             print("Unexpected error:", error_msg)
             return jsonify(success=False, message="Unexpected server error"), 500
-
-
 
 @app.route('/api/login', methods=['POST'])
 def login():
