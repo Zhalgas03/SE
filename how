@@ -1,0 +1,8 @@
+venv\Scripts\activate
+
+docker run --name trip-mysql -e MYSQL_ROOT_PASSWORD=rootpass -e MYSQL_DATABASE=tripdb -e MYSQL_USER=tripuser -e MYSQL_PASSWORD=trippass -p 3306:3306 -d mysql:8
+docker exec -it trip-mysql bash
+mysql -u tripuser -p
+trippass
+
+pmNK8CZbn2lOEr8vN8OERavIp3CsrUkmKqVcx9wAte03zTloVzTv5EHX
