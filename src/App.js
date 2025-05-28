@@ -6,7 +6,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import AuthLayout from './layouts/AuthLayout';
 import HomePage from './pages/HomePage';
-
+import PlannerPage from './pages/PlannerPage';
 function AppContent() {
   const location = useLocation();
   const hideNavbar = ['/login', '/register'].includes(location.pathname);
@@ -20,6 +20,7 @@ function AppContent() {
           <Route path="/register" element={<Register />} />
         </Route>
         <Route path="/" element={<HomePage />} />
+     <Route path="/planner" element={<PlannerPage />} />
       </Routes>
     </>
   );
