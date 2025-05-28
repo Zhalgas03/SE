@@ -6,3 +6,7 @@ mysql -u tripuser -p
 trippass
 
 pmNK8CZbn2lOEr8vN8OERavIp3CsrUkmKqVcx9wAte03zTloVzTv5EHX
+
+
+git remote -v
+git push -u origin main
