@@ -7,7 +7,7 @@ function HomePage() {
   const navigate = useNavigate();
 
   const handleCreateTrip = () => {
-    navigate(user ? '/create-trip' : '/login');
+    navigate(user ? '/planner' : '/login');  // ✅ Исправлено тут
   };
 
   return (
