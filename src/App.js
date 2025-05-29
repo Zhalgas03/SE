@@ -7,6 +7,7 @@ import Register from './components/Register';
 import AuthLayout from './layouts/AuthLayout';
 import HomePage from './pages/HomePage';
 import PlannerPage from './pages/PlannerPage';
+import GoogleCallback from './components/GoogleCallback';
 function AppContent() {
   const location = useLocation();
   const hideNavbar = ['/login', '/register'].includes(location.pathname);
@@ -20,7 +21,9 @@ function AppContent() {
           <Route path="/register" element={<Register />} />
         </Route>
         <Route path="/" element={<HomePage />} />
-     <Route path="/planner" element={<PlannerPage />} />
+        <Route path="/planner" element={<PlannerPage />} />
+        <Route path="/google/callback" element={<GoogleCallback />} />
+        
       </Routes>
     </>
   );

@@ -57,12 +57,31 @@ function Login() {
   };
 
   return (
+      
     <form
       onSubmit={handleSubmit}
       className="p-4"
       style={{ width: '100%', maxWidth: '400px' }}
     >
+
       <h2 className="text-center mb-4 fw-bold">Welcome</h2>
+            <div className="mb-3 d-grid">
+  <a
+    className="btn btn-outline-dark google-btn"
+    href="http://localhost:5000/api/auth/google"
+    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+  >
+    <img
+      src="https://developers.google.com/identity/images/g-logo.png"
+      alt="Google"
+      width="20"
+      height="20"
+    />
+    Sign in with Google
+  </a>
+</div>
+
+<hr className="my-4" style={{ opacity: 0.3 }} />
 
       <div className="mb-3">
         <label>Email</label>

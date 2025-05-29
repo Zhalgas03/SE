@@ -1,13 +1,27 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useUser } from '../context/UserContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 function HomePage() {
-  const { user } = useUser();
+  const { user, setUser } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const token = params.get('token');
+    const username = params.get('username');
+
+    if (token && username) {
+      setUser({ token, username });
+      localStorage.setItem('token', token);
+      localStorage.setItem('username', username);
+      navigate('/', { replace: true }); // 🔁 Clean URL
+    }
+  }, [location, navigate, setUser]);
 
   const handleCreateTrip = () => {
-    navigate(user ? '/planner' : '/login');  // ✅ Исправлено тут
+    navigate(user ? '/planner' : '/login');
   };
 
   return (
