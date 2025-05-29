@@ -63,6 +63,10 @@ function Register() {
     }
   };
 
+  const handleGoogleLogin = () => {
+    window.location.href = 'http://localhost:5000/api/auth/google';
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -70,6 +74,25 @@ function Register() {
       style={{ width: '100%', maxWidth: '400px' }}
     >
       <h2 className="text-center mb-4 fw-bold">Create Account</h2>
+
+      <div className="mb-3">
+        <button
+          type="button"
+          className="btn btn-outline-dark w-100 google-btn"
+          onClick={handleGoogleLogin}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}
+        >
+          <img
+            src="https://developers.google.com/identity/images/g-logo.png"
+            alt="Google"
+            width="20"
+            height="20"
+          />
+          Sign up with Google
+        </button>
+      </div>
+
+      <hr className="my-4" style={{ opacity: 0.3 }} />
 
       <div className="mb-3">
         <label>Username</label>
@@ -119,20 +142,20 @@ function Register() {
         />
       </div>
 
-{error && (
-  <div
-    className="alert alert-danger d-flex align-items-center mt-3"
-    role="alert"
-    style={{
-      fontSize: "0.9em",
-      padding: "0.75rem 1rem",
-      borderRadius: "0.375rem",
-      boxShadow: "0 0 6px rgba(0,0,0,0.1)"
-    }}
-  >
-    <span className="me-2">⚠️</span> {error}
-  </div>
-)}
+      {error && (
+        <div
+          className="alert alert-danger d-flex align-items-center mt-3"
+          role="alert"
+          style={{
+            fontSize: "0.9em",
+            padding: "0.75rem 1rem",
+            borderRadius: "0.375rem",
+            boxShadow: "0 0 6px rgba(0,0,0,0.1)"
+          }}
+        >
+          <span className="me-2">⚠️</span> {error}
+        </div>
+      )}
 
       <button type="submit" className="btn btn-primary w-100">
         Sign Up
