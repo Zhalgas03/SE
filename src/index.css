@@ -11,3 +11,20 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.main-content {
+  height: calc(100vh - 56px); /* Bootstrap navbar по умолчанию */
+}
+
+.google-btn {
+  background-color: white !important;
+  border-color: #ddd !important;
+  color: #444 !important;
+  text-decoration: none;
+}
+
+.google-btn:hover {
+  background-color: white !important;
+  color: #444 !important;
+  text-decoration: none;
+}
