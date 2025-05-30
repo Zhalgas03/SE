@@ -23,45 +23,48 @@ function Register() {
   };
 
   const handleSubmit = async e => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
+  if (form.password !== form.confirmPassword) {
+    setError('Passwords do not match');
+    return;
+  }
 
-    if (!isPasswordStrong(form.password)) {
-      setError('Password must be at least 8 characters and include uppercase, lowercase letters, and a number');
-      return;
-    }
+  if (!isPasswordStrong(form.password)) {
+    setError('Password must be at least 8 characters and include uppercase, lowercase letters, and a number');
+    return;
+  }
 
-    const payload = {
-      username: form.username,
-      email: form.email,
-      password: form.password
-    };
-
-    try {
-      const res = await fetch("http://localhost:5000/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        credentials: "include"
-      });
-
-      const data = await res.json();
-      console.log("SERVER RESPONSE:", data);
-
-      if (res.ok && data.success) {
-        navigate('/login');
-      } else {
-        setError(data.message || 'Registration failed');
-      }
-    } catch (err) {
-      console.error(err);
-      setError('Network error');
-    }
+  const payload = {
+    username: form.username,
+    email: form.email,
+    password: form.password
   };
+
+  try {
+    const res = await fetch("http://localhost:5000/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      credentials: "include"
+    });
+
+    const data = await res.json();
+    console.log("SERVER RESPONSE:", data);
+
+    if (res.ok && data.success) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('username', data.username);
+      navigate('/login'); // 
+    } else {
+      setError(data.message || 'Registration failed');
+    }
+  } catch (err) {
+    console.error(err);
+    setError('Network error');
+  }
+};
+
 
   const handleGoogleLogin = () => {
     window.location.href = 'http://localhost:5000/api/auth/google';
