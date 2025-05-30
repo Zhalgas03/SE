@@ -39,7 +39,8 @@ function Login() {
       const res = await fetch("http://localhost:5000/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
+        body: JSON.stringify(form),
+        credentials: "include"
       });
 
       const data = await res.json();
@@ -68,7 +69,7 @@ function Login() {
             <div className="mb-3 d-grid">
   <a
     className="btn btn-outline-dark google-btn"
-    href="http://localhost:5000/api/auth/google"
+    href="https://abcd1234.ngrok.io/api/auth/google/callback"
     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
   >
     <img
