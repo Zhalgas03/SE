@@ -12,3 +12,5 @@ git remote -v
 git push -u origin main
 👋 Hello! I'm your smart travel planner. Let's start step-by-step! Where would you like to go?
 
+
+ngrok config add-authtoken 2xoXrFFYOnzKeO4kCBYpj0oNzcw_xhXz1K5ussafmP5vAanT

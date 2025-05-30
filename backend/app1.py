@@ -12,9 +12,12 @@ import requests
 from flask import redirect, session, url_for
 from requests_oauthlib import OAuth2Session
 load_dotenv()
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
+
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
@@ -60,40 +63,45 @@ def google_callback():
 
 
 
+from flask import request, jsonify
+import requests
+import os
+
 chat_history = []
 
 SYSTEM_PROMPT = {
     "role": "system",
-    "content": """You are a friendly and smart travel planner assistant.
+    "content": """
+You are a smart and focused travel planner assistant.
 
-Welcome the user as if it's their first time using the app.
-Speak in a helpful, kind tone. Ask one question at a time:
+Ask the user exactly 6 questions, one at a time, in this order:
 
 1. Where would you like to go?
-2. When?
-3. What do you want to do there?
-4. Travel style?
-5. Budget?
-6. Solo or group?
+2. When are you planning to travel?
+3. What do you want to do there? (e.g. business, sightseeing, food, walking)
+4. What is your travel style? (e.g. budget, relaxed, adventurous)
+5. What is your budget?
+6. Are you traveling solo or with others?
 
-Understand free answers (e.g. "next week", "cheap", "somewhere warm").
-Politely clarify if unclear.
+✅ Do not confirm, rephrase, or summarize the user's answers after each response.  
+✅ Just move on to the next question.  
+✅ Be minimal and direct.
 
-Once all answers are collected, return a JSON like:
-{
-  "destination": "string",
-  "dates": ["start", "end"],
-  "interests": ["..."],
-  "travel_style": "...",
-  "budget": number,
-  "group_mode": true/false
+If the user gives a vague answer like a country, region, or "somewhere warm", ask them to specify a **city**. You can suggest 2–3 cities by name only (no descriptions).
+
+If the user asks for recommendations before the questionnaire is complete, suggest a few cities **without any extra info**, then continue to the next question.
+
+❗Only after all 6 answers are collected, briefly summarize the trip details in bullet points.  
+Then, and only then, generate a personalized travel plan with accommodation, POIs, and practical suggestions.
+
+Do not generate long responses unless the user explicitly asks for details.
+"""
 }
 
-Start by greeting the user and asking the first question."""
-}
 
-@app.route('/api/ollama-chat', methods=['POST'])
-def ollama_chat():
+
+@app.route('/api/perplexity-chat', methods=['POST'])
+def perplexity_chat():
     global chat_history
     user_message = request.json.get('message')
     if not user_message:
@@ -104,43 +112,37 @@ def ollama_chat():
 
     chat_history.append({"role": "user", "content": user_message})
 
+    api_key = os.getenv("PERPLEXITY_API_KEY")
+    if not api_key:
+        print("❌ PERPLEXITY_API_KEY is missing.")
+        return jsonify({'reply': 'Missing API key.'}), 500
+
     try:
-        res = requests.post("http://localhost:11434/api/chat", json={
-            "model": "llama3",
-            "messages": chat_history,
-            "stream": False
-        })
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        body = {
+            "model": "sonar",  # ✅ единственная допустимая строка
+            "messages": chat_history
+        }
+
+        res = requests.post("https://api.perplexity.ai/chat/completions", headers=headers, json=body)
+
+        print("Perplexity status code:", res.status_code)
+        print("Perplexity response:", res.text)
 
         if res.status_code == 200:
-            reply = res.json()['message']['content']
+            reply = res.json()["choices"][0]["message"]["content"]
             chat_history.append({"role": "assistant", "content": reply})
             return jsonify({'reply': reply})
         else:
-            print("Ollama API error:", res.text)
-            return jsonify({'reply': 'Ollama API error.'}), 500
+            return jsonify({'reply': 'Perplexity API error'}), 500
 
     except Exception as e:
-        print("Ollama error:", str(e))
+        print("❌ Exception:", e)
         return jsonify({'reply': 'Server error'}), 500
-
-@app.route('/api/ollama-reset', methods=['POST'])
-def ollama_reset():
-    try:
-        # Отправим специальную команду для сброса контекста
-        res = requests.post('http://localhost:11434/api/generate', json={
-            "model": "llama3",
-            "prompt": "Forget all previous conversations.",
-            "stream": False
-        })
-
-        if res.status_code == 200:
-            return jsonify({'success': True})
-        else:
-            return jsonify({'success': False, 'error': res.text}), 500
-
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 
 
 
