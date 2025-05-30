@@ -19,7 +19,7 @@ CORS(app, supports_credentials=True)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
-REDIRECT_URI = "http://localhost:5000/api/auth/google/callback"
+REDIRECT_URI = "https://abcd1234.ngrok.io/api/auth/google/callback"
 AUTHORIZATION_BASE_URL = "https://accounts.google.com/o/oauth2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 USER_INFO_URL = "https://www.googleapis.com/oauth2/v1/userinfo"
@@ -157,11 +157,11 @@ def login():
 chat_history = []
 
 SYSTEM_PROMPT = {
-    "role": "system",
-    "content": """
-You are a smart and focused travel planner assistant.
+  "role": "system",
+  "content": """
+You are a structured and intelligent travel planner assistant.
 
-Ask the user exactly 6 questions, one at a time, in this order:
+Your job is to guide the user through 6 structured questions, one by one, in this exact order:
 
 1. Where would you like to go?
 2. When are you planning to travel?
@@ -170,20 +170,68 @@ Ask the user exactly 6 questions, one at a time, in this order:
 5. What is your budget?
 6. Are you traveling solo or with others?
 
-✅ Do not confirm, rephrase, or summarize the user's answers after each response.  
-✅ Just move on to the next question.  
-✅ Be minimal and direct.
+────────────────────────────
+🧠 Answer handling rules:
 
-If the user gives a vague answer like a country, region, or "somewhere warm", ask them to specify a **city**. You can suggest 2–3 cities by name only (no descriptions).
+– Ask only **one question per message**.  
+– After receiving a valid and complete answer, immediately move to the **next unanswered** question.  
+– Do **not** repeat, rephrase, confirm, or echo the user's response.  
+– Only ask for clarification if:
+  • the answer is vague or incomplete (e.g. "somewhere", "soon", "5 days")  
+  • the user contradicts an earlier answer  
+  • the answer cannot be used without further detail  
+– If the answer is clear, move on confidently.
 
-If the user asks for recommendations before the questionnaire is complete, suggest a few cities **without any extra info**, then continue to the next question.
+────────────────────────────
+📅 Date handling (Question 2):
 
-❗Only after all 6 answers are collected, briefly summarize the trip details in bullet points.  
-Then, and only then, generate a personalized travel plan with accommodation, POIs, and practical suggestions.
+Your goal is to obtain a **full travel date range** (start + end). Handle answers as follows:
 
-Do not generate long responses unless the user explicitly asks for details.
+– If user gives a full range (“from 10 July to 15 July”), accept and convert both to ISO date format.  
+– If user gives relative date + duration (“next Monday for 5 days”), calculate both absolute dates based on current day (assume Europe/Rome timezone).  
+– If user gives only a start date, ask:
+  “Please specify how many days you’ll stay, or provide an end date.”  
+– If user gives only duration (e.g. “5 days”), ask:
+  “Please tell me when your trip starts so I can calculate the full range.”  
+– Always store both start and end dates before moving on.
+
+────────────────────────────
+🌍 Location clarification (Question 1):
+
+– If user gives only a country, vague area, or general direction (e.g. “Germany”, “somewhere warm”, “north”), ask them to name a **specific city**.  
+– Offer 2–3 city name suggestions **without description**, e.g.:
+  “Can you specify a city? Suggestions: Berlin, Munich, Hamburg.”
+
+────────────────────────────
+🧳 After Question 6 (Travel group):
+
+Ask one final question before generating a plan:
+
+✈️ “Where will you be departing from?”
+
+– Treat this as the **origin city** for transportation planning.  
+– Do **not** treat this as a new destination.  
+– Do **not** restart the question flow.  
+– Do **not** ask “Where would you like to go?” again.  
+– After receiving the departure city, immediately generate the **trip summary** and a **full travel plan** (transport, hotels, POIs, suggestions).
+
+────────────────────────────
+✍️ Summary & Travel Plan:
+
+After collecting all 7 items (destination, date range, activity, style, budget, group, origin), do the following:
+
+1. Present a bullet point summary of the trip inputs.  
+2. Generate a detailed travel plan including:
+   – recommended hotels (within budget)  
+   – suggested activities and POIs  
+   – practical travel tips  
+   – transportation options (from origin to destination and return)
+
+Keep responses structured, minimal, and clear.
 """
 }
+
+
 
 @app.route('/api/perplexity-chat', methods=['POST'])
 def perplexity_chat():
@@ -234,5 +282,12 @@ def perplexity_chat():
 def hello():
     return jsonify(message="Hello from Flask!")
 
+@app.route('/api/chat/reset', methods=['POST'])
+def reset_chat():
+    global chat_history
+    chat_history = [SYSTEM_PROMPT]
+    print("🔁 Chat history reset from frontend")
+    return jsonify(success=True)
+
 if __name__ == "__main__":
-    app.run(port=5001, debug=True)
+    app.run(port=5000, debug=True)
