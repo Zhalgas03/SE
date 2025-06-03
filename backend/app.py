@@ -8,7 +8,7 @@ from config import Config
 # Импорт блюпринтов
 from routes.auth_routes import auth_bp
 from routes.chat_routes import chat_bp
-# from routes.trip_routes import trip_bp  # подкл. позже
+from trip import trip_bp  # ✅ Новый импорт
 
 def create_app():
     app = Flask(__name__)
@@ -22,7 +22,7 @@ def create_app():
     # Регистрация маршрутов
     app.register_blueprint(auth_bp)
     app.register_blueprint(chat_bp)
-    # app.register_blueprint(trip_bp)
+    app.register_blueprint(trip_bp)  # ✅ Подключен Trip API
 
     @app.route("/api/hello")
     def hello():
@@ -32,4 +32,10 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
+
+    # ✅ Создание таблиц в PostgreSQL при запуске
+    from db import Base, engine
+    import models.ai_plan  # 👈 Регистрируем модель
+    Base.metadata.create_all(bind=engine)
+
     app.run(port=5001, debug=True)
