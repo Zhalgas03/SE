@@ -42,7 +42,7 @@ function Register() {
   };
 
   try {
-    const res = await fetch("http://localhost:5000/api/register", {
+    const res = await fetch("http://localhost:5001/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -67,7 +67,7 @@ function Register() {
 
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5000/api/auth/google';
+    window.location.href = 'http://localhost:5001/api/auth/google';
   };
 
   return (
