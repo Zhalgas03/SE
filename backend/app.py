@@ -12,7 +12,6 @@ import requests
 from dotenv import load_dotenv
 import time
 from api.trips import trips_bp
-from api.poi import poi_bp
 from api.votes import votes_bp
 from api.voting_rules import voting_bp
 from api.evaluate import evaluate_bp
@@ -34,7 +33,6 @@ app.config['JWT_SECRET_KEY'] = 'super-secret-key'
 jwt = JWTManager(app)
 
 app.register_blueprint(trips_bp)
-app.register_blueprint(poi_bp)
 app.register_blueprint(votes_bp)
 app.register_blueprint(voting_bp)
 app.register_blueprint(evaluate_bp)
