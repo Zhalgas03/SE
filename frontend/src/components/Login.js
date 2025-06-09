@@ -69,7 +69,7 @@ function Login() {
             <div className="mb-3 d-grid">
   <a
     className="btn btn-outline-dark google-btn"
-    href="https://abcd1234.ngrok.io/api/auth/google/callback"
+    href="https://3955-192-167-110-47.ngrok-free.app"
     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
   >
     <img
