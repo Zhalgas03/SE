@@ -1,43 +1,53 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import TripHeader from './TripComponents/TripHeader';
+import TripOverview from './TripComponents/TripOverview';
+import TripHighlights from './TripComponents/TripHighlights';
+import TripItinerary from './TripComponents/TripItinerary';
+import TripTransfer from './TripComponents/TripTransfer';
 
-const sampleData = [
-  {
-    day: 1,
-    title: "Arrival in Almaty",
-    activity: "Explore Almaty, enjoy local food",
-    hotel: "Almaty Comfort Hostel",
-    weather: "☀️ Sunny, 22°C"
-  },
-  {
-    day: 2,
-    title: "Local Market & Museums",
-    activity: "Visit Green Market and museums",
-    hotel: "Hotel Kazakhstan",
-    weather: "⛅ Partly cloudy, 20°C"
-  },
-  {
-    day: 3,
-    title: "Mountain Adventure",
-    activity: "Hiking in the Tian Shan mountains",
-    hotel: "Mountain Eco Lodge",
-    weather: "🌄 Clear, 18°C"
-  }
-];
 
 function TripVisualizer() {
+  const { tripId } = useParams();
+  const [trip, setTrip] = useState(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!tripId || !token) return;
+
+    fetch(`http://localhost:5001/api/trip/${tripId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setTrip(data.trip);
+        }
+      });
+  }, [tripId]);
+
+  if (!trip) return <div className="p-4">Loading trip...</div>;
+
   return (
-    <div className="p-4">
-      <h2 className="fs-4 fw-bold mb-4">Your Itinerary</h2>
-      <div className="d-flex flex-column gap-3">
-        {sampleData.map((item) => (
-          <div key={item.day} className="border rounded-4 shadow-sm p-3 bg-white">
-            <h5 className="fw-semibold mb-2">📅 Day {item.day}: {item.title}</h5>
-            <p className="mb-1">📍 <strong>Activity:</strong> {item.activity}</p>
-            <p className="mb-1">🛏 <strong>Hotel:</strong> {item.hotel}</p>
-            <p className="mb-0">🌤 <strong>Weather:</strong> {item.weather}</p>
-          </div>
-        ))}
-      </div>
+    <div className="px-4 py-4" style={{ backgroundColor: '#f9f9f9' }}>
+      <TripHeader name={trip.name} date_start={trip.date_start} date_end={trip.date_end} />
+
+<div className="bg-white border rounded-lg shadow p-4 mb-4">
+  <h3 className="text-xl font-bold mb-2">Trip Summary from DB</h3>
+  <ul className="list-disc list-inside text-sm">
+    <li><strong>Name:</strong> {trip.name}</li>
+    <li><strong>Start:</strong> {trip.date_start}</li>
+    <li><strong>End:</strong> {trip.date_end}</li>
+    <li><strong>ID:</strong> {trip.id}</li>
+  </ul>
+</div>
+
+      <TripOverview trip={trip} />
+      <TripHighlights trip={trip} />
+      <TripItinerary trip={trip} />
+      <TripTransfer trip={trip} />
     </div>
   );
 }

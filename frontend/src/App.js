@@ -8,6 +8,8 @@ import AuthLayout from './layouts/AuthLayout';
 import HomePage from './pages/HomePage';
 import PlannerPage from './pages/PlannerPage';
 import GoogleCallback from './components/GoogleCallback';
+
+import TestTripPost from './pages/TestTripPost';
 function AppContent() {
   const location = useLocation();
   const hideNavbar = ['/login', '/register'].includes(location.pathname);
@@ -23,7 +25,7 @@ function AppContent() {
         <Route path="/" element={<HomePage />} />
         <Route path="/planner" element={<PlannerPage />} />
         <Route path="/google/callback" element={<GoogleCallback />} />
-        
+        <Route path="/test-trip-post" element={<TestTripPost />} />
       </Routes>
     </>
   );
