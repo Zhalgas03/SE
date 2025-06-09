@@ -10,7 +10,7 @@ function GoogleCallback() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/auth/google/profile', {
+        const res = await fetch('http://localhost:5001/api/auth/google/profile', {
           credentials: 'include'
         });
         const data = await res.json();
