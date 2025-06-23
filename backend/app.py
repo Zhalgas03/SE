@@ -39,23 +39,23 @@ app.register_blueprint(evaluate_bp)
 
 def get_db_connection():
     return psycopg2.connect(
-        host="gondola.proxy.rlwy.net",
-        port=15216,
+        host="hopper.proxy.rlwy.net",
+        port=29189,
         database="railway",
         user="postgres",
-        password="NxWQAwqlQgIzNdNUiuPEHEHtnTjBQBlY",
+        password="qDHwcTUSpUtARphLPiDguLUspkSZGnSg",
         cursor_factory=RealDictCursor
     )
 
-@app.route("/api/auth/google")
-def google_login():
+#@app.route("/api/auth/google")
+#def google_login():
     google = OAuth2Session(GOOGLE_CLIENT_ID, redirect_uri=REDIRECT_URI, scope=["openid", "email", "profile"])
     auth_url, state = google.authorization_url(AUTHORIZATION_BASE_URL, access_type="offline")
     session["oauth_state"] = state
     return redirect(auth_url)
 
-@app.route("/api/auth/google/callback")
-def google_callback():
+#@app.route("/api/auth/google/callback")
+#def google_callback():
     google = OAuth2Session(GOOGLE_CLIENT_ID, state=session["oauth_state"], redirect_uri=REDIRECT_URI)
     token = google.fetch_token(TOKEN_URL, client_secret=GOOGLE_CLIENT_SECRET, authorization_response=request.url)
     resp = google.get(USER_INFO_URL)
@@ -121,7 +121,7 @@ def register():
                     return jsonify(success=False, message="Username or email already exists."), 409
 
                 cur.execute(
-                    "INSERT INTO users (username, email, password) VALUES (%s, %s, %s)",
+                    "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)",
                     (username, email, hashed_password)
                 )
 
@@ -151,10 +151,10 @@ def login():
             cur.execute("SELECT * FROM users WHERE email = %s", (email,))
             user = cur.fetchone()
 
-            if user and check_password_hash(user['password'], password_input):
-                username=user['username']
+            if user and check_password_hash(user['password_hash'], password_input):  # type: ignore
+                username = user['username']  # type: ignore
                 access_token = create_access_token(identity=username)
-                return jsonify(success=True, token=access_token, username=user['username']), 200
+                return jsonify(success=True, token=access_token, username=user['username']), 200  # type: ignore
             else:
                 return jsonify(success=False, message="Invalid email or password"), 401
 
@@ -196,32 +196,32 @@ Your job is to guide the user through 6 structured questions, one by one, in thi
 
 Your goal is to obtain a **full travel date range** (start + end). Handle answers as follows:
 
-– If user gives a full range (“from 10 July to 15 July”), accept and convert both to ISO date format.  
-– If user gives relative date + duration (“next Monday for 5 days”), calculate both absolute dates based on current day (assume Europe/Rome timezone).  
+– If user gives a full range ("from 10 July to 15 July"), accept and convert both to ISO date format.  
+– If user gives relative date + duration ("next Monday for 5 days"), calculate both absolute dates based on current day (assume Europe/Rome timezone).  
 – If user gives only a start date, ask:
-  “Please specify how many days you’ll stay, or provide an end date.”  
-– If user gives only duration (e.g. “5 days”), ask:
-  “Please tell me when your trip starts so I can calculate the full range.”  
+  "Please specify how many days you'll stay, or provide an end date."  
+– If user gives only duration (e.g. "5 days"), ask:
+  "Please tell me when your trip starts so I can calculate the full range."  
 – Always store both start and end dates before moving on.
 
 ────────────────────────────
 🌍 Location clarification (Question 1):
 
-– If user gives only a country, vague area, or general direction (e.g. “Germany”, “somewhere warm”, “north”), ask them to name a **specific city**.  
+– If user gives only a country, vague area, or general direction (e.g. "Germany", "somewhere warm", "north"), ask them to name a **specific city**.  
 – Offer 2–3 city name suggestions **without description**, e.g.:
-  “Can you specify a city? Suggestions: Berlin, Munich, Hamburg.”
+  "Can you specify a city? Suggestions: Berlin, Munich, Hamburg."
 
 ────────────────────────────
 🧳 After Question 6 (Travel group):
 
 Ask one final question before generating a plan:
 
-✈️ “Where will you be departing from?”
+✈️ "Where will you be departing from?"
 
 – Treat this as the **origin city** for transportation planning.  
 – Do **not** treat this as a new destination.  
 – Do **not** restart the question flow.  
-– Do **not** ask “Where would you like to go?” again.  
+– Do **not** ask "Where would you like to go?" again.  
 – After receiving the departure city, immediately generate the **trip summary** and a **full travel plan** (transport, hotels, POIs, suggestions).
 
 ────────────────────────────
@@ -245,6 +245,9 @@ Keep responses structured, minimal, and clear.
 @app.route('/api/perplexity-chat', methods=['POST'])
 def perplexity_chat():
     global chat_history
+    if not request.json:
+        return jsonify({'reply': 'Invalid JSON data.'}), 400
+    
     user_message = request.json.get('message')
     if not user_message:
         return jsonify({'reply': 'No input received.'}), 400
