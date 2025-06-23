@@ -34,15 +34,15 @@ function TripVisualizer() {
     <div className="px-4 py-4" style={{ backgroundColor: '#f9f9f9' }}>
       <TripHeader name={trip.name} date_start={trip.date_start} date_end={trip.date_end} />
 
-<div className="bg-white border rounded-lg shadow p-4 mb-4">
-  <h3 className="text-xl font-bold mb-2">Trip Summary from DB</h3>
-  <ul className="list-disc list-inside text-sm">
-    <li><strong>Name:</strong> {trip.name}</li>
-    <li><strong>Start:</strong> {trip.date_start}</li>
-    <li><strong>End:</strong> {trip.date_end}</li>
-    <li><strong>ID:</strong> {trip.id}</li>
-  </ul>
-</div>
+      <div className="bg-white border rounded-lg shadow p-4 mb-4">
+        <h3 className="text-xl font-bold mb-2">Trip Summary from DB</h3>
+        <ul className="list-disc list-inside text-sm">
+          <li><strong>Name:</strong> {trip.name}</li>
+          <li><strong>Start:</strong> {trip.date_start}</li>
+          <li><strong>End:</strong> {trip.date_end}</li>
+          <li><strong>ID:</strong> {trip.id}</li>
+        </ul>
+      </div>
 
       <TripOverview trip={trip} />
       <TripHighlights trip={trip} />
