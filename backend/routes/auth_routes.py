@@ -1,74 +1,57 @@
 from flask import Blueprint, request, jsonify, redirect, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
+from db import get_db_connection
 from config import Config
 from requests_oauthlib import OAuth2Session
-from sqlalchemy.exc import SQLAlchemyError
 import re
-import os
-
-from db import SessionLocal
-from models.user import User
+import time
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api")
 
-
 @auth_bp.route("/auth/google")
 def google_login():
-    google = OAuth2Session(
-        Config.GOOGLE_CLIENT_ID,
-        redirect_uri=Config.REDIRECT_URI,
-        scope=["openid", "email", "profile"]
-    )
-    auth_url, state = google.authorization_url(
-        "https://accounts.google.com/o/oauth2/auth",
-        access_type="offline"
-    )
+    google = OAuth2Session(Config.GOOGLE_CLIENT_ID, redirect_uri=Config.REDIRECT_URI, scope=["openid", "email", "profile"])
+    auth_url, state = google.authorization_url("https://accounts.google.com/o/oauth2/auth", access_type="offline")
     session["oauth_state"] = state
     return redirect(auth_url)
 
-
 @auth_bp.route("/auth/google/callback")
 def google_callback():
+    google = OAuth2Session(Config.GOOGLE_CLIENT_ID, state=session["oauth_state"], redirect_uri=Config.REDIRECT_URI)
+    token = google.fetch_token("https://oauth2.googleapis.com/token",
+                               client_secret=Config.GOOGLE_CLIENT_SECRET,
+                               authorization_response=request.url)
+    user_info = google.get("https://www.googleapis.com/oauth2/v1/userinfo").json()
+    email = user_info["email"]
+    name = user_info.get("name", "GoogleUser")
+
     try:
-        google = OAuth2Session(
-            Config.GOOGLE_CLIENT_ID,
-            state=session.get("oauth_state"),
-            redirect_uri=Config.REDIRECT_URI
-        )
-        token = google.fetch_token(
-            "https://oauth2.googleapis.com/token",
-            client_secret=Config.GOOGLE_CLIENT_SECRET,
-            authorization_response=request.url
-        )
-        user_info = google.get("https://www.googleapis.com/oauth2/v1/userinfo").json()
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+            user = cur.fetchone()
 
-        email = user_info["email"]
-        name = user_info.get("name", "GoogleUser")
+            if not user:
+                cur.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)",
+                            (name, email, generate_password_hash("google_dummy")))
+                conn.commit()
+                cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+                user = cur.fetchone()
 
-        db = SessionLocal()
-        user = db.query(User).filter_by(email=email).first()
-
-        if not user:
-            user = User(username=name, email=email, password=generate_password_hash("google_dummy"))
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-
-        token = create_access_token(identity=user.email)
-        return redirect(f"http://localhost:3000?token={token}&username={user.username}")
+        token = create_access_token(identity={'username': user['username'], 'email': user['email']})
+        return redirect(f"http://localhost:3000?token={token}&username={user['username']}")
 
     except Exception as e:
         print("Google OAuth error:", str(e))
         return jsonify(success=False, message="OAuth error"), 500
-
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
     data = request.get_json()
     username = data.get("username", "").strip()
     email = data.get("email", "").strip()
-    password = data.get("password", "")
+    password = data.get("password")
 
     if not all([username, email, password]):
         return jsonify(success=False, message="All fields are required."), 400
@@ -85,26 +68,22 @@ def register():
     hashed = generate_password_hash(password)
 
     try:
-        db = SessionLocal()
-        existing_user = db.query(User).filter(
-            (User.username == username) | (User.email == email)
-        ).first()
+        conn = get_db_connection()
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT * FROM users WHERE username=%s OR email=%s", (username, email))
+                if cur.fetchone():
+                    return jsonify(success=False, message="Username or email exists."), 409
 
-        if existing_user:
-            return jsonify(success=False, message="Username or email exists."), 409
+                cur.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)",
+                            (username, email, hashed))
 
-        new_user = User(username=username, email=email, password=hashed)
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
+        token = create_access_token(identity={"username": username, "email": email})
+        return jsonify(success=True, token=token, username=username)
 
-        token = create_access_token(identity=email)
-        return jsonify(success=True, token=token, username=new_user.username)
-
-    except SQLAlchemyError as e:
-        print("❌ Register DB error:", str(e))
-        return jsonify(success=False, message="Database error"), 500
-
+    except Exception as e:
+        print("❌ Register error:", str(e))
+        return jsonify(success=False, message="Server error"), 500
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
@@ -116,15 +95,17 @@ def login():
         return jsonify(success=False, message="Email and password required"), 400
 
     try:
-        db = SessionLocal()
-        user = db.query(User).filter_by(email=email).first()
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+            user = cur.fetchone()
 
-        if user and check_password_hash(user.password, password):
-            token = create_access_token(identity=user.email)
-            return jsonify(success=True, token=token, username=user.username)
-        else:
-            return jsonify(success=False, message="Invalid credentials"), 401
+            if user and check_password_hash(user["password"], password):
+                token = create_access_token(identity={"username": user["username"], "email": user["email"]})
+                return jsonify(success=True, token=token, username=user["username"])
+            else:
+                return jsonify(success=False, message="Invalid credentials"), 401
 
-    except SQLAlchemyError as e:
-        print("Login DB error:", str(e))
+    except Exception as e:
+        print("Login error:", str(e))
         return jsonify(success=False, message="Server error"), 500
