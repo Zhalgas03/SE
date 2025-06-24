@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthRedirect } from '../hooks/useAuthRedirect';
 
 function HomePage() {
-  const { setUser } = useUser();
+  const { user, setUser } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
   const { goToPlanner } = useAuthRedirect();
@@ -32,7 +32,8 @@ function HomePage() {
     }
   }, [location, navigate, setUser]);
 
-  const username = localStorage.getItem('username');
+
+  const username = user?.username;
 
   const mobileCards = [
     { icon: 'bi-airplane-engines', text: 'Pick destination' },
