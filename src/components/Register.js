@@ -76,7 +76,9 @@ function Register() {
       className="p-4"
       style={{ width: '100%', maxWidth: '400px' }}
     >
-      <h2 className="text-center mb-4 fw-bold">Create Account</h2>
+      <div className="text-center mb-3">
+  <img src="/logo.png" alt="Trip DVisor" style={{ height: '50px' }} />
+</div>
 
       <div className="mb-3">
         <button
