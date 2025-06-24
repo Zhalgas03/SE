@@ -1,162 +1,100 @@
-from flask import Flask, request, jsonify, redirect, session, url_for
+from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_mysqldb import MySQL
 from flask_jwt_extended import JWTManager, create_access_token
 from werkzeug.security import generate_password_hash, check_password_hash
 from email_validator import validate_email, EmailNotValidError
-from requests_oauthlib import OAuth2Session
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import os
-import re
-import requests
-from dotenv import load_dotenv
-import time
-from api.trips import trips_bp
-from api.votes import votes_bp
-from api.voting_rules import voting_bp
-from api.evaluate import evaluate_bp
-
-load_dotenv()
+import re  # <-- ДОБАВЬ СЮДА!
+import pymysql
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
+CORS(app, origins=["http://localhost:3000"], supports_credentials=True)
 
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
-GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
-GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
-REDIRECT_URI = "https://abcd1234.ngrok.io/api/auth/google/callback"
-AUTHORIZATION_BASE_URL = "https://accounts.google.com/o/oauth2/auth"
-TOKEN_URL = "https://oauth2.googleapis.com/token"
-USER_INFO_URL = "https://www.googleapis.com/oauth2/v1/userinfo"
+# MySQL config
+app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_USER'] = 'tripuser'
+app.config['MYSQL_PASSWORD'] = 'trippass'
+app.config['MYSQL_DB'] = 'tripdb'
 
+# JWT config
 app.config['JWT_SECRET_KEY'] = 'super-secret-key'
+
+mysql = MySQL(app)
 jwt = JWTManager(app)
 
-app.register_blueprint(trips_bp)
-app.register_blueprint(votes_bp)
-app.register_blueprint(voting_bp)
-app.register_blueprint(evaluate_bp)
+@app.route("/api/hello")
+def hello():
+    return jsonify(message="Hello from Flask!")
 
-def get_db_connection():
-    return psycopg2.connect(
-        host="hopper.proxy.rlwy.net",
-        port=29189,
-        database="railway",
-        user="postgres",
-        password="qDHwcTUSpUtARphLPiDguLUspkSZGnSg",
-        cursor_factory=RealDictCursor
-    )
-
-#@app.route("/api/auth/google")
-#def google_login():
-    google = OAuth2Session(GOOGLE_CLIENT_ID, redirect_uri=REDIRECT_URI, scope=["openid", "email", "profile"])
-    auth_url, state = google.authorization_url(AUTHORIZATION_BASE_URL, access_type="offline")
-    session["oauth_state"] = state
-    return redirect(auth_url)
-
-#@app.route("/api/auth/google/callback")
-#def google_callback():
-    google = OAuth2Session(GOOGLE_CLIENT_ID, state=session["oauth_state"], redirect_uri=REDIRECT_URI)
-    token = google.fetch_token(TOKEN_URL, client_secret=GOOGLE_CLIENT_SECRET, authorization_response=request.url)
-    resp = google.get(USER_INFO_URL)
-    user_info = resp.json()
-
-    email = user_info["email"]
-    name = user_info.get("name", "GoogleUser")
-
-    try:
-        conn = get_db_connection()
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM users WHERE email = %s", (email,))
-            user = cur.fetchone()
-
-            if not user:
-                cur.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)",
-                            (name, email, generate_password_hash("google_dummy")))
-                conn.commit()
-                cur.execute("SELECT * FROM users WHERE email = %s", (email,))
-                user = cur.fetchone()
-
-        access_token = create_access_token(identity={'username': user['username'], 'email': user['email']})
-        return redirect(f"http://localhost:3000?token={access_token}&username={user['username']}")
-
-    except Exception as e:
-        print("Google OAuth error:", str(e))
-        return jsonify(success=False, message="OAuth error"), 500
 
 
 @app.route('/api/register', methods=['POST'])
+@app.route('/api/register', methods=['POST'])
 def register():
-    start_time = time.time()  # 🕒 начало замера
-
     data = request.get_json()
     if not data:
         return jsonify(success=False, message="Invalid JSON"), 400
 
     username = data.get('username', '').strip()
     email = data.get('email', '').strip()
-    password = data.get('password')
+    password = data.get('password', '')
 
+    # Проверка на пустые поля
     if not all([username, email, password]):
         return jsonify(success=False, message="All fields are required."), 400
 
-    # Простейшая проверка username и email
+    # ✅ Проверка: username должен содержать хотя бы одну букву (латиница)
     if not re.search(r'[a-zA-Z]', username):
         return jsonify(success=False, message="Username must contain at least one letter."), 400
 
-    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-        return jsonify(success=False, message="Invalid email format."), 400
+    # Email валидация
+    try:
+        validate_email(email)
+    except EmailNotValidError:
+        return jsonify(success=False, message="Invalid email address."), 400
 
+    # Проверка пароля по стандарту
     if not re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$', password):
         return jsonify(success=False, message="Password must be at least 8 characters and include uppercase, lowercase letters and a number."), 400
 
     hashed_password = generate_password_hash(password)
 
     try:
-        conn = get_db_connection()
-        with conn:  # автоматический commit
-            with conn.cursor() as cur:
-                cur.execute("SELECT * FROM users WHERE username=%s OR email=%s", (username, email))
-                if cur.fetchone():
-                    return jsonify(success=False, message="Username or email already exists."), 409
-
-                cur.execute(
-                    "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)",
-                    (username, email, hashed_password)
-                )
-
-        access_token = create_access_token(identity=username)
-
-
-        print("✅ Register completed in", round(time.time() - start_time, 2), "seconds")  # ⏱️ замер времени
-        return jsonify(success=True, token=access_token, username=username), 200
+        cur = mysql.connection.cursor()
+        cur.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)",
+                    (username, email, hashed_password))
+        mysql.connection.commit()
+        cur.close()
+        return jsonify(success=True, message="User registered successfully."), 201
 
     except Exception as e:
-        print("❌ Register error:", str(e))
-        return jsonify(success=False, message="Unexpected server error"), 500
+        error_msg = str(e)
+        if "Duplicate entry" in error_msg and "username" in error_msg:
+            return jsonify(success=False, message="This username is already taken. Please choose another."), 409
+        elif "Duplicate entry" in error_msg and "email" in error_msg:
+            return jsonify(success=False, message="This email is already registered. Please use another."), 409
+        else:
+            print("Unexpected error:", error_msg)
+            return jsonify(success=False, message="Unexpected server error"), 500
+
 
 
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
-    email = data.get('email', '').strip()
-    password_input = data.get('password', '')
+    email = data.get('email')
+    password_input = data.get('password')
 
-    if not all([email, password_input]):
-        return jsonify(success=False, message="Email and password are required."), 400
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+    user = cur.fetchone()
+    cur.close()
 
-    try:
-        conn = get_db_connection()
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM users WHERE email = %s", (email,))
-            user = cur.fetchone()
-
-            if user and check_password_hash(user['password_hash'], password_input):  # type: ignore
-                username = user['username']  # type: ignore
-                access_token = create_access_token(identity=username)
-                return jsonify(success=True, token=access_token, username=user['username']), 200  # type: ignore
-            else:
-                return jsonify(success=False, message="Invalid email or password"), 401
+    if user and check_password_hash(user[3], password_input):
+        access_token = create_access_token(identity={'username': user[1], 'email': user[2]})
+        return jsonify(success=True, token=access_token, username=user[1]), 200
+    else:
+        return jsonify(success=False, message="Invalid email or password"), 401
 
     except Exception as e:
         print("Login error:", str(e))
@@ -302,4 +240,4 @@ def reset_chat():
     return jsonify(success=True)
 
 if __name__ == "__main__":
-    app.run(port=5001, debug=True)
+    app.run(port=5000, debug=True)
