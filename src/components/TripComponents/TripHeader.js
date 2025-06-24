@@ -13,11 +13,6 @@ function TripHeader() {
           <span className="badge bg-danger">Solo Trip</span>
         </div>
       </div>
-      <div className="d-flex gap-2">
-        <Button variant="outline-secondary" size="sm">🖊 Modify</Button>
-        <Button variant="outline-success" size="sm">📥 Download</Button>
-        <Button variant="outline-info" size="sm">🔗 Share</Button>
-      </div>
     </div>
   );
 }
