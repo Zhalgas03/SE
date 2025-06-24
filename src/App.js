@@ -27,6 +27,7 @@ function AppContent() {
       localStorage.setItem("username", username);
       setUser({ username });
       navigate('/');
+      
     }
   }, []);
 
