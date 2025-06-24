@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 function Register() {
   const [form, setForm] = useState({
@@ -8,8 +9,9 @@ function Register() {
     password: '',
     confirmPassword: ''
   });
-
   const [error, setError] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
+  const recaptchaRef = useRef(null);
   const navigate = useNavigate();
 
   const handleChange = e => {
@@ -22,49 +24,62 @@ function Register() {
     return regex.test(password);
   };
 
-  const handleSubmit = async e => {
-  e.preventDefault();
-
-  if (form.password !== form.confirmPassword) {
-    setError('Passwords do not match');
-    return;
-  }
-
-  if (!isPasswordStrong(form.password)) {
-    setError('Password must be at least 8 characters and include uppercase, lowercase letters, and a number');
-    return;
-  }
-
-  const payload = {
-    username: form.username,
-    email: form.email,
-    password: form.password
+  const handleCaptchaChange = token => {
+    setCaptchaToken(token);
   };
 
-  try {
-    const res = await fetch("http://localhost:5001/api/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      credentials: "include"
-    });
+  const handleSubmit = async e => {
+    e.preventDefault();
 
-    const data = await res.json();
-    console.log("SERVER RESPONSE:", data);
-
-    if (res.ok && data.success) {
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('username', data.username);
-      navigate('/login'); // 
-    } else {
-      setError(data.message || 'Registration failed');
+    if (form.password !== form.confirmPassword) {
+      setError('Passwords do not match');
+      return;
     }
-  } catch (err) {
-    console.error(err);
-    setError('Network error');
-  }
-};
 
+    if (!isPasswordStrong(form.password)) {
+      setError('Password must be at least 8 characters and include uppercase, lowercase letters, and a number');
+      return;
+    }
+
+    if (!captchaToken) {
+      setError('Please complete the CAPTCHA.');
+      return;
+    }
+
+    const payload = {
+      username: form.username,
+      email: form.email,
+      password: form.password,
+      captchaToken
+    };
+
+    try {
+      const res = await fetch("http://localhost:5001/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        credentials: "include"
+      });
+
+      const data = await res.json();
+      console.log("SERVER RESPONSE:", data);
+
+      if (res.ok && data.success) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('username', data.username);
+        navigate('/login');
+      } else {
+        setError(data.message || 'Registration failed');
+        recaptchaRef.current.reset();
+        setCaptchaToken('');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Network error');
+      recaptchaRef.current.reset();
+      setCaptchaToken('');
+    }
+  };
 
   const handleGoogleLogin = () => {
     window.location.href = 'http://localhost:5001/api/auth/google';
@@ -77,8 +92,8 @@ function Register() {
       style={{ width: '100%', maxWidth: '400px' }}
     >
       <div className="text-center mb-3">
-  <img src="/logo.png" alt="Trip DVisor" style={{ height: '50px' }} />
-</div>
+        <img src="/logo.png" alt="Trip DVisor" style={{ height: '50px' }} />
+      </div>
 
       <div className="mb-3">
         <button
@@ -96,7 +111,22 @@ function Register() {
           Sign up with Google
         </button>
       </div>
-
+<div className="mb-3 d-grid">
+  <button
+    type="button"
+    className="btn btn-outline-dark"
+    onClick={() => window.location.href = "http://localhost:5001/github"}
+    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+  >
+    <img
+      src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+      alt="GitHub"
+      width="20"
+      height="20"
+    />
+    Sign in with GitHub
+  </button>
+</div>
       <hr className="my-4" style={{ opacity: 0.3 }} />
 
       <div className="mb-3">
@@ -144,6 +174,14 @@ function Register() {
           className="form-control"
           onChange={handleChange}
           required
+        />
+      </div>
+
+      <div className="mb-3">
+        <ReCAPTCHA
+          ref={recaptchaRef}
+          sitekey="6LdTZGwrAAAAAOs5n3cyHEAebDLsfRcyMd4-Fj67"
+          onChange={handleCaptchaChange}
         />
       </div>
 
