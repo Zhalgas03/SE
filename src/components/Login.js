@@ -102,7 +102,7 @@ if (data.success) {
 <div className="mb-3 d-grid">
   <button
     className="btn btn-outline-dark"
-    onClick={() => window.location.href = "http://localhost:5001/github"}
+    onClick={() => window.location.href = "http://localhost:5001/api/github"}
     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
   >
     <img
