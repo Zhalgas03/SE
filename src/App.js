@@ -10,6 +10,8 @@ import HomePage from './pages/HomePage';
 import PlannerPage from './pages/PlannerPage';
 import GoogleCallback from './components/GoogleCallback';
 import TestTripPost from './pages/TestTripPost';
+import AccountPage from './pages/AccountPage';
+import LoginSuccess from './pages/LoginSuccess';
 
 function AppContent() {
   const location = useLocation();
@@ -17,19 +19,28 @@ function AppContent() {
   const { setUser } = useUser();
   const hideNavbar = ['/login', '/register'].includes(location.pathname);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
-    const username = params.get("username");
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const tokenRaw = params.get("token");
+  const username = params.get("username");
 
-    if (token && username) {
+  if (tokenRaw && username) {
+    try {
+      const token = decodeURIComponent(tokenRaw);
       localStorage.setItem("token", token);
       localStorage.setItem("username", username);
       setUser({ username });
-      navigate('/');
-      
+
+
+      setTimeout(() => {
+        navigate('/');
+      }, 0);
+    } catch (err) {
+      console.error("❌ Failed to decode token:", tokenRaw, err);
     }
-  }, []);
+  }
+}, []);
+
 
   return (
     <>
@@ -43,6 +54,8 @@ function AppContent() {
         <Route path="/planner" element={<PlannerPage />} />
         <Route path="/google/callback" element={<GoogleCallback />} />
         <Route path="/test-trip-post" element={<TestTripPost />} />
+        <Route path="/account" element={<AccountPage />} />
+        <Route path="/login-success" element={<LoginSuccess />} />
       </Routes>
     </>
   );
