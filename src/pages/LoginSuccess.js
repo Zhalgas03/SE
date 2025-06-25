@@ -7,22 +7,20 @@ function LoginSuccess() {
   const { setUser } = useUser();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = decodeURIComponent(params.get("token"));
-    const username = params.get("username");
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const token = decodeURIComponent(params.get("token"));
+  const username = params.get("username");
 
-    if (token && username) {
-      localStorage.setItem("token", token);
-      localStorage.setItem("username", username);
-      setUser({ username }, token);
-
-      // Навигация только после того, как данные установлены
-      setTimeout(() => {
-        navigate('/', { replace: true });
-      }, 100);
-    }
-  }, []);
+  if (token && username) {
+    localStorage.setItem("token", token);
+    localStorage.setItem("username", username);
+    setUser({ username }, token);
+    setTimeout(() => {
+      navigate('/', { replace: true });
+    }, 100);
+  }
+}, []);
 
   return (
     <div className="d-flex vh-100 justify-content-center align-items-center">

@@ -19,28 +19,6 @@ function AppContent() {
   const { setUser } = useUser();
   const hideNavbar = ['/login', '/register'].includes(location.pathname);
 
-useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const tokenRaw = params.get("token");
-  const username = params.get("username");
-
-  if (tokenRaw && username) {
-    try {
-      const token = decodeURIComponent(tokenRaw);
-      localStorage.setItem("token", token);
-      localStorage.setItem("username", username);
-      setUser({ username });
-
-
-      setTimeout(() => {
-        navigate('/');
-      }, 0);
-    } catch (err) {
-      console.error("❌ Failed to decode token:", tokenRaw, err);
-    }
-  }
-}, []);
-
 
   return (
     <>

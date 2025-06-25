@@ -8,12 +8,14 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(storedUser || null);
   const [token, setToken] = useState(storedToken || null);
 
-  const saveUser = (userData, tokenData) => {
+const saveUser = (userData, tokenData) => {
+  if (userData && tokenData) {
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('token', tokenData);
     setUser(userData);
     setToken(tokenData);
-  };
+  }
+};
 
   const clearUser = () => {
     localStorage.clear();
@@ -22,15 +24,22 @@ export const UserProvider = ({ children }) => {
   };
 
   const checkTokenValidity = async () => {
-    if (!storedToken) return;
+    const freshToken = localStorage.getItem('token');
+    if (!freshToken) return;
+
     try {
-      const res = await fetch('http://localhost:5001/api/account/settings', {
-        headers: { Authorization: `Bearer ${storedToken}` },
+      const res = await fetch('http://localhost:5001/api/user/profile', {
+        headers: { Authorization: `Bearer ${freshToken}` },
         credentials: 'include',
       });
 
-      if (res.status === 401) {
+      const data = await res.json();
+
+      if (res.status === 401 || !data.success) {
         clearUser();
+      } else if (data.user) {
+        setUser({ username: data.user.username });
+        setToken(freshToken);
       }
     } catch (err) {
       clearUser();
