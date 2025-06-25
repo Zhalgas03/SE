@@ -59,10 +59,10 @@ function Login() {
       const data = await res.json();
       console.log("SERVER RESPONSE:", data);
 
-      if (data.success) {
-        setUser({ email: form.email, username: data.username });
-        navigate('/');
-      } else {
+if (data.success) {
+  setUser({ email: form.email, username: data.username }, data.token);
+  navigate('/');
+}else {
         setError(data.message || "Login failed");
         recaptchaRef.current.reset();
         setCaptchaToken('');
