@@ -118,12 +118,29 @@ def login():
             user = cur.fetchone()
             if user and check_password_hash(user['password_hash'], password_input):
                 username = user['username']
-                access_token = create_access_token(identity=username)
+                is_2fa_enabled = user.get('is_2fa_enabled', False)
 
-                return jsonify(success=True, token=access_token, username=username), 200
+                if is_2fa_enabled:
+                    # 2FA включена → отправляем код
+                    code = generate_2fa_code()
+                    expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
+                    send_2fa_email(email, code)
 
-            else:
-                return jsonify(success=False, message="Invalid email or password"), 401
+                    cur.execute("""
+                        INSERT INTO email_2fa_codes (email, code, expires_at)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (email)
+                        DO UPDATE SET code = EXCLUDED.code, expires_at = EXCLUDED.expires_at
+                    """, (email, code, expires_at))
+                    conn.commit()
+
+                    return jsonify(success=True, message="Verification code sent to your email."), 200
+
+                else:
+                    # 2FA выключена → сразу JWT
+                    access_token = create_access_token(identity=username)
+                    return jsonify(success=True, token=access_token, username=username), 200
+
     except Exception as e:
         print("Login error:", str(e))
         return jsonify(success=False, message="Server error"), 500
@@ -133,7 +150,7 @@ def login():
 def verify_2fa():
     data = request.get_json()
     email = data.get("email", "").strip()
-    code_input = data.get("code", "").strip()
+    code_input = str(data.get("code", "")).strip()
 
     if not email or not code_input:
         return jsonify(success=False, message="Email and code are required."), 400
@@ -213,3 +230,7 @@ def github_callback():
     
     encoded_token = quote(access_token)
     return redirect(f"http://localhost:3000/login-success?token={encoded_token}&username={username}")
+
+
+
+

@@ -8,7 +8,7 @@ load_dotenv()
 
 def generate_2fa_code() -> str:
     return str(random.randint(100000, 999999))
- 
+
 def send_2fa_email(recipient: str, code: str):
     sender = os.getenv("EMAIL_SENDER")
     password = os.getenv("EMAIL_PASSWORD")
