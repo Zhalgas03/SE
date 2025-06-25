@@ -14,4 +14,10 @@ git push -u origin main
 
 
 ngrok config add-authtoken 2xoXrFFYOnzKeO4kCBYpj0oNzcw_xhXz1K5ussafmP5vAanT
-ngrok http 5001
+ngrok http 5000
+
+git add .                   
+git commit -m "комментарий"  
+git push origin main       
+
+2025-06-23 to 2025-06-30
