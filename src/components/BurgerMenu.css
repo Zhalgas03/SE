@@ -1,0 +1,33 @@
+.burger-button {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.burger-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+}
+
+.bar {
+  width: 22px;
+  height: 2px;
+  background-color: #333;
+  margin: 4px auto;
+  transition: all 0.3s ease-in-out;
+  border-radius: 2px;
+}
+
+.bar.open.top {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.bar.open.middle {
+  opacity: 0;
+}
+
+.bar.open.bottom {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
