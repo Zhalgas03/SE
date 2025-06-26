@@ -1,23 +1,57 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
-  const storedUser = JSON.parse(localStorage.getItem('user')) || null;
-  const [user, setUser] = useState(storedUser);
+  const storedUser = JSON.parse(localStorage.getItem('user'));
+  const storedToken = localStorage.getItem('token');
+  const [user, setUser] = useState(storedUser || null);
+  const [token, setToken] = useState(storedToken || null);
 
-  const saveUser = (userData) => {
-    setUser(userData);
+const saveUser = (userData, tokenData) => {
+  if (userData && tokenData) {
     localStorage.setItem('user', JSON.stringify(userData));
-  };
+    localStorage.setItem('token', tokenData);
+    setUser(userData);
+    setToken(tokenData);
+  }
+};
 
   const clearUser = () => {
+    localStorage.clear();
     setUser(null);
-    localStorage.removeItem('user');
+    setToken(null);
   };
 
+  const checkTokenValidity = async () => {
+    const freshToken = localStorage.getItem('token');
+    if (!freshToken) return;
+
+    try {
+      const res = await fetch('http://localhost:5001/api/user/profile', {
+        headers: { Authorization: `Bearer ${freshToken}` },
+        credentials: 'include',
+      });
+
+      const data = await res.json();
+
+      if (res.status === 401 || !data.success) {
+        clearUser();
+      } else if (data.user) {
+        setUser({ username: data.user.username });
+        setToken(freshToken);
+      }
+    } catch (err) {
+      clearUser();
+    }
+  };
+
+  useEffect(() => {
+    checkTokenValidity();
+  }, []);
+
   return (
-    <UserContext.Provider value={{ user, setUser: saveUser, clearUser }}>
+    <UserContext.Provider value={{ user, token, setUser: saveUser, clearUser }}>
       {children}
     </UserContext.Provider>
   );

@@ -46,13 +46,24 @@ function Navbar() {
           <Link className="nav-link" to="/favorites">
             <i className="bi bi-heart me-1" /> Favorites
           </Link>
-          {user ? (
-            <button className="btn btn-outline-danger btn-sm" onClick={handleLogout}>
-              Sign Out
-            </button>
-          ) : (
-            <Link className="btn btn-outline-primary btn-sm" to="/login">Sign In</Link>
-          )}
+{user ? (
+  <>
+    <Link
+      to="/account"
+      className="nav-link d-flex align-items-center"
+      style={{ fontWeight: '500', color: '#333' }}
+    >
+      <i className="bi bi-person-circle me-1" />
+      {user.username}
+    </Link>
+    <button className="btn btn-outline-danger btn-sm" onClick={handleLogout}>
+      Sign Out
+    </button>
+  </>
+) : (
+  <Link className="btn btn-outline-primary btn-sm" to="/login">Sign In</Link>
+)}
+
         </div>
       </div>
 
