@@ -14,6 +14,8 @@ import os
 from dotenv import load_dotenv
 from routes.session import session_bp
 from routes.password_reset import reset_bp
+from routes.notifications import notifications_bp
+
 
 
 
@@ -44,6 +46,9 @@ app.register_blueprint(session_bp)
 app.register_blueprint(user_bp)
 
 app.register_blueprint(reset_bp)
+
+app.register_blueprint(notifications_bp)
+
 
 
 app.register_blueprint(trips_bp)
