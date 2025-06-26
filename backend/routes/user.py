@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from db import get_db_connection
 from psycopg2.extras import RealDictCursor
 from models.userclass import UserDict
-from flask_jwt_extended import create_access_token
+
 user_bp = Blueprint("user", __name__, url_prefix="/api/user")
 
 @user_bp.route("/profile", methods=["GET"])
@@ -55,9 +55,7 @@ def update_profile():
         """, (new_username, new_email, current_username))
         conn.commit()
 
-    new_token = create_access_token(identity=new_username)
-
-    return jsonify(success=True, message="Profile updated successfully", token=new_token, username=new_username), 200
+    return jsonify(success=True, message="Profile updated successfully"), 200
 
 
 @user_bp.route("/2fa/enable-disable", methods=["POST"])
@@ -85,10 +83,3 @@ def toggle_2fa():
     except Exception as e:
         print("2FA toggle error:", str(e))
         return jsonify(success=False, message="Server error while updating 2FA status"), 500
-
-
-
-
-# ...
-
-

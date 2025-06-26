@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, redirect, session
+from flask import Blueprint, request, jsonify, redirect, session, make_response
 from flask_jwt_extended import create_access_token
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import get_db_connection
@@ -97,7 +97,8 @@ def login():
         response = requests.post("https://www.google.com/recaptcha/api/siteverify", data=payload)
         result = response.json()
         return result.get("success", False)
-
+    
+    
     # Get data from request
     data = request.get_json()
     email = data.get('email', '').strip()
@@ -105,10 +106,10 @@ def login():
 
     captcha_token = data.get('captchaToken')
     if not captcha_token or not verify_captcha(captcha_token):
-        return jsonify(success=False, message="CAPTCHA verification failed"), 400
+        return make_response(jsonify(success=False, message="CAPTCHA verification failed"), 400)
 
     if not all([email, password_input]):
-        return jsonify(success=False, message="Email and password are required."), 400
+        return make_response(jsonify(success=False, message="Email and password are required."), 400)
 
     try:
         conn = get_db_connection()
@@ -133,23 +134,19 @@ def login():
                     """, (email, code, expires_at))
                     conn.commit()
 
-                    return jsonify(success=True, message="Verification code sent to your email."), 200
+                    return make_response(jsonify(success=True, message="Verification code sent to your email."), 200)
 
                 else:
                     # 2FA выключена → сразу JWT
                     access_token = create_access_token(identity=username)
-                    return jsonify(success=True, token=access_token, username=username), 200
-
-            else:
-                return jsonify(success=False, message="Invalid email or password"), 401
+                    return make_response(jsonify(success=True, token=access_token, username=username), 200)
 
     except Exception as e:
         print("Login error:", str(e))
-        return jsonify(success=False, message="Server error"), 500
+        return make_response(jsonify(success=False, message="Server error"), 500)
 
-
-    return jsonify(success=False, message="Invalid email or password"), 401
-
+    # Explicit fallback return for type checker
+    return make_response(jsonify(success=False, message="Invalid email or password"), 401)
     
         
 @auth_bp.route("/verify-2fa", methods=["POST"])
@@ -232,11 +229,4 @@ def github_callback():
             conn.commit()
 
     access_token = create_access_token(identity=username)
-    from urllib.parse import quote  # добавь в начало файла
-    
-    encoded_token = quote(access_token)
-    return redirect(f"http://localhost:3000/login-success?token={encoded_token}&username={username}")
-
-
-
-
+    return redirect(f"http://localhost:3000?token={access_token}&username={username}")
