@@ -10,7 +10,7 @@
     "axios": "^1.9.0",
     "bootstrap": "^5.3.6",
     "bootstrap-icons": "^1.13.1",
-    "framer-motion": "^12.15.0",
+    "framer-motion": "^12.19.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.511.0",
     "react": "^19.1.0",
