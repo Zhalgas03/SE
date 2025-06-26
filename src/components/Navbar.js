@@ -31,7 +31,13 @@ function Navbar() {
       {/* Top bar: Logo + Burger */}
       <div className="navbar navbar-light bg-white shadow-sm px-3 px-md-5 d-flex justify-content-between align-items-center">
         <Link className="navbar-brand fw-bold d-flex align-items-center" to="/">
-          <img src="/logo.png" alt="Trip DVisor Logo" height="30" className="me-2" />
+          <img
+  src="/logo.png"
+  alt="Trip DVisor Logo"
+  height="30"
+  className="me-2"
+  style={{ marginTop: '4px' }}
+/>
         </Link>
 
         <div className="d-lg-none">

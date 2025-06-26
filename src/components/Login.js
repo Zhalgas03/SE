@@ -225,13 +225,17 @@ function Login() {
         </div>
       )}
 
-      <button type="submit" className="btn btn-primary w-100">
-        Sign In
-      </button>
+{!show2FA && (
+  <>
+    <button type="submit" className="btn btn-primary w-100">
+      Sign In
+    </button>
 
-      <p className="text-center mt-3">
-        Don’t have an account? <Link to="/register">Sign up</Link>
-      </p>
+    <p className="text-center mt-3">
+      Don’t have an account? <Link to="/register">Sign up</Link>
+    </p>
+  </>
+)}
 
       {/* 2FA UI */}
       {show2FA && (
