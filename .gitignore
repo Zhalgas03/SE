@@ -2,3 +2,5 @@
 node_modules/
 .cache/
 *.log
+node_modules/
+.cache/
