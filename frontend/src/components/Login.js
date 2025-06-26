@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import ReCAPTCHA from 'react-google-recaptcha';
@@ -8,12 +8,33 @@ function Login() {
   const [error, setError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
+  const [show2FA, setShow2FA] = useState(false);
+  const [code, setCode] = useState('');
+  const [verifyError, setVerifyError] = useState('');
+  const [resendTimer, setResendTimer] = useState(30);
+  const timerRef = useRef(null);
   const recaptchaRef = useRef(null);
 
   const { setUser } = useUser();
   const navigate = useNavigate();
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  useEffect(() => {
+    if (show2FA && resendTimer > 0) {
+      timerRef.current = setInterval(() => {
+        setResendTimer(prev => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => clearInterval(timerRef.current);
+  }, [show2FA]);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -37,6 +58,7 @@ function Login() {
   const handleSubmit = async e => {
     e.preventDefault();
     setError("");
+    setVerifyError("");
 
     if (!captchaToken) {
       setError("Please complete the CAPTCHA.");
@@ -59,10 +81,13 @@ function Login() {
       const data = await res.json();
       console.log("SERVER RESPONSE:", data);
 
-if (data.success) {
-  setUser({ email: form.email, username: data.username }, data.token);
-  navigate('/');
-}else {
+      if (data.success && data.token) {
+        setUser({ email: form.email, username: data.username }, data.token);
+        navigate('/');
+      } else if (data.success && !data.token) {
+        setShow2FA(true);
+        setResendTimer(30);
+      } else {
         setError(data.message || "Login failed");
         recaptchaRef.current.reset();
         setCaptchaToken('');
@@ -71,6 +96,49 @@ if (data.success) {
       setError("Network error. Try again.");
       recaptchaRef.current.reset();
       setCaptchaToken('');
+    }
+  };
+
+  const handle2FAVerify = async () => {
+    setVerifyError('');
+    try {
+      const res = await fetch("http://localhost:5001/api/verify-2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.email, code })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setUser({ email: form.email, username: data.username }, data.token);
+        navigate('/');
+      } else {
+        setVerifyError(data.message || "Verification failed");
+      }
+    } catch (err) {
+      setVerifyError("Network error. Try again.");
+    }
+  };
+
+  const handleResendCode = async () => {
+    setVerifyError('');
+    try {
+      const res = await fetch("http://localhost:5001/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, captchaToken }),
+        credentials: "include"
+      });
+
+      const data = await res.json();
+      if (data.success && !data.token) {
+        setVerifyError("New code sent to your email.");
+        setResendTimer(30);
+      } else {
+        setVerifyError("Failed to resend code.");
+      }
+    } catch {
+      setVerifyError("Server error while resending code.");
     }
   };
 
@@ -99,21 +167,23 @@ if (data.success) {
           Sign in with Google
         </a>
       </div>
-<div className="mb-3 d-grid">
-  <button
-    className="btn btn-outline-dark"
-    onClick={() => window.location.href = "http://localhost:5001/api/github"}
-    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-  >
-    <img
-      src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
-      alt="GitHub"
-      width="20"
-      height="20"
-    />
-    Sign in with GitHub
-  </button>
-</div>
+
+      <div className="mb-3 d-grid">
+        <button
+          className="btn btn-outline-dark"
+          onClick={() => window.location.href = "http://localhost:5001/api/github"}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+        >
+          <img
+            src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+            alt="GitHub"
+            width="20"
+            height="20"
+          />
+          Sign in with GitHub
+        </button>
+      </div>
+
       <hr className="my-4" style={{ opacity: 0.3 }} />
 
       <div className="mb-3">
@@ -162,6 +232,44 @@ if (data.success) {
       <p className="text-center mt-3">
         Don’t have an account? <Link to="/register">Sign up</Link>
       </p>
+
+      {/* 2FA UI */}
+      {show2FA && (
+        <div className="mt-4">
+          <label>Enter the verification code from your email</label>
+          <input
+            type="text"
+            className="form-control mt-2"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            autoFocus
+          />
+          {verifyError && (
+            <div className="text-danger mt-1">{verifyError}</div>
+          )}
+          <button
+            type="button"
+            className="btn btn-success w-100 mt-3"
+            onClick={handle2FAVerify}
+          >
+            Verify Code
+          </button>
+
+          <div className="text-center mt-2">
+            {resendTimer > 0 ? (
+              <span className="text-muted">You can resend the code in {resendTimer}s</span>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-link"
+                onClick={handleResendCode}
+              >
+                Resend Code
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </form>
   );
 }

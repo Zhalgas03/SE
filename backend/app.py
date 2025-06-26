@@ -13,6 +13,8 @@ from routes.user import user_bp
 import os
 from dotenv import load_dotenv
 from routes.session import session_bp
+from routes.password_reset import reset_bp
+
 
 
 load_dotenv()
@@ -40,6 +42,9 @@ app.register_blueprint(github_bp)
 app.register_blueprint(session_bp)
 
 app.register_blueprint(user_bp)
+
+app.register_blueprint(reset_bp)
+
 
 app.register_blueprint(trips_bp)
 app.register_blueprint(votes_bp)
