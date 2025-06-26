@@ -86,6 +86,7 @@ function Register() {
   };
 
   return (
+  
     <form
       onSubmit={handleSubmit}
       className="p-4"
@@ -177,13 +178,25 @@ function Register() {
         />
       </div>
 
-      <div className="mb-3">
-        <ReCAPTCHA
-          ref={recaptchaRef}
-          sitekey="6LdTZGwrAAAAAOs5n3cyHEAebDLsfRcyMd4-Fj67"
-          onChange={handleCaptchaChange}
-        />
-      </div>
+<div
+  className="captcha-wrapper"
+  style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: '1rem',
+    marginBottom: '1rem',
+    transform: window.innerWidth < 768 ? 'scale(0.82)' : 'scale(1)',
+    transformOrigin: 'center',
+    transition: 'transform 0.3s ease'
+  }}
+>
+  <ReCAPTCHA
+    ref={recaptchaRef}
+    sitekey="6LdTZGwrAAAAAOs5n3cyHEAebDLsfRcyMd4-Fj67"
+    onChange={handleCaptchaChange}
+  />
+</div>
 
       {error && (
         <div

@@ -200,23 +200,49 @@ function Login() {
         )}
       </div>
 
-      <div className="mb-3">
-        <label>Password</label>
-        <input
-          name="password"
-          type="password"
-          className="form-control"
-          onChange={handleChange}
-          required
-        />
-      </div>
+<div className="mb-3">
+  <label>Password</label>
+  <input
+    name="password"
+    type="password"
+    className="form-control"
+    onChange={handleChange}
+    required
+    style={{ marginBottom: '0.2rem' }} // ⬅️ добавим отступ под полем
+  />
+  <div className="text-end">
+    <Link
+      to="/forgot-password"
+      className="text-decoration-none text-muted"
+      style={{ fontSize: '0.875rem' }}
+    >
+      Forgot password?
+    </Link>
+  </div>
+</div>
+
 
       <div className="mb-3">
-        <ReCAPTCHA
-          ref={recaptchaRef}
-          sitekey="6LdTZGwrAAAAAOs5n3cyHEAebDLsfRcyMd4-Fj67"
-          onChange={handleCaptchaChange}
-        />
+<div
+  className="captcha-wrapper"
+  style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: '1rem',
+    marginBottom: '1rem',
+    transform: window.innerWidth < 768 ? 'scale(0.82)' : 'scale(1)',
+    transformOrigin: 'center',
+    transition: 'transform 0.3s ease'
+  }}
+>
+  <ReCAPTCHA
+    ref={recaptchaRef}
+    sitekey="6LdTZGwrAAAAAOs5n3cyHEAebDLsfRcyMd4-Fj67"
+    onChange={handleCaptchaChange}
+  />
+</div>
+
       </div>
 
       {error && (
