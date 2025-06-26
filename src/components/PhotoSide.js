@@ -55,18 +55,19 @@ function PhotoSide() {
     };
   }, []);
 
-  return (
-    <div
-      className="col-md-6"
-      style={{
-        backgroundImage: `url(${photoUrl})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        height: '100vh',
-        transition: 'background-image 1s ease-in-out',
-      }}
-    />
-  );
+ return (
+  <div
+    style={{
+      width: '100%',
+      height: '100%',
+      backgroundImage: `url(${photoUrl})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      transition: 'background-image 1s ease-in-out',
+    }}
+  />
+);
+
 }
 
 export default PhotoSide;

@@ -1,6 +1,7 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { UserProvider } from './context/UserContext';
+import { useUser } from './context/UserContext';
 import Navbar from './components/Navbar';
 import Login from './components/Login';
 import Register from './components/Register';
@@ -8,11 +9,16 @@ import AuthLayout from './layouts/AuthLayout';
 import HomePage from './pages/HomePage';
 import PlannerPage from './pages/PlannerPage';
 import GoogleCallback from './components/GoogleCallback';
-
 import TestTripPost from './pages/TestTripPost';
+import AccountPage from './pages/AccountPage';
+import LoginSuccess from './pages/LoginSuccess';
+
 function AppContent() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { setUser } = useUser();
   const hideNavbar = ['/login', '/register'].includes(location.pathname);
+
 
   return (
     <>
@@ -26,6 +32,8 @@ function AppContent() {
         <Route path="/planner" element={<PlannerPage />} />
         <Route path="/google/callback" element={<GoogleCallback />} />
         <Route path="/test-trip-post" element={<TestTripPost />} />
+        <Route path="/account" element={<AccountPage />} />
+        <Route path="/login-success" element={<LoginSuccess />} />
       </Routes>
     </>
   );
