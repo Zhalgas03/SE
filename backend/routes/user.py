@@ -4,6 +4,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from db import get_db_connection
 from psycopg2.extras import RealDictCursor
 from models.userclass import UserDict
+from utils.notify import create_notification
+
 
 user_bp = Blueprint("user", __name__, url_prefix="/api/user")
 
@@ -77,6 +79,14 @@ def toggle_2fa():
                 WHERE username = %s
             """, (enable_2fa, username))
             conn.commit()
+            # получаем user_id по username
+            cur.execute("SELECT user_id FROM users WHERE username = %s", (username,))
+            user = cur.fetchone()
+            if user:
+                title = "2FA Enabled" if enable_2fa else "2FA Disabled"
+                message = "You have enabled two-factor authentication." if enable_2fa else "You have disabled two-factor authentication."
+                create_notification(user["user_id"], title, message)
+
 
         return jsonify(success=True, message=f"2FA {'enabled' if enable_2fa else 'disabled'}"), 200
 
