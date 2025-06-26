@@ -97,8 +97,7 @@ def login():
         response = requests.post("https://www.google.com/recaptcha/api/siteverify", data=payload)
         result = response.json()
         return result.get("success", False)
-    
-    
+
     # Get data from request
     data = request.get_json()
     email = data.get('email', '').strip()
@@ -141,9 +140,16 @@ def login():
                     access_token = create_access_token(identity=username)
                     return jsonify(success=True, token=access_token, username=username), 200
 
+            else:
+                return jsonify(success=False, message="Invalid email or password"), 401
+
     except Exception as e:
         print("Login error:", str(e))
         return jsonify(success=False, message="Server error"), 500
+
+
+    return jsonify(success=False, message="Invalid email or password"), 401
+
     
         
 @auth_bp.route("/verify-2fa", methods=["POST"])
