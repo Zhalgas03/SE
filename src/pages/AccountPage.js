@@ -7,6 +7,7 @@ function AccountPage() {
   const [enable2FA, setEnable2FA] = useState(false);
   const [message, setMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // ✅
 
   const { setUser } = useUser();
 
@@ -29,43 +30,45 @@ function AccountPage() {
         } else {
           setMessage(data.message || 'Failed to load user profile');
         }
+        setIsLoading(false); // ✅
       })
-      .catch(() => setMessage('Server error while loading profile'));
+      .catch(() => {
+        setMessage('Server error while loading profile');
+        setIsLoading(false); // ✅
+      });
   }, []);
 
-const handleSave = async () => {
-  const token = localStorage.getItem('token');
-  setIsSaving(true);
-  setMessage('');
+  const handleSave = async () => {
+    const token = localStorage.getItem('token');
+    setIsSaving(true);
+    setMessage('');
 
-  try {
-    const res = await fetch('http://localhost:5001/api/user/profile', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      credentials: 'include',
-      body: JSON.stringify({ username, email }),
-    });
+    try {
+      const res = await fetch('http://localhost:5001/api/user/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify({ username, email }),
+      });
 
-    const data = await res.json();
-if (data.success) {
-  setMessage(data.message);
-  if (data.token && data.username) {
-    setUser({ username: data.username }, data.token);
-  }
-
-} else {
-      setMessage(data.message || 'Update failed');
+      const data = await res.json();
+      if (data.success) {
+        setMessage(data.message);
+        if (data.token && data.username) {
+          setUser({ username: data.username }, data.token);
+        }
+      } else {
+        setMessage(data.message || 'Update failed');
+      }
+    } catch {
+      setMessage('Server error while updating profile');
+    } finally {
+      setIsSaving(false);
     }
-  } catch {
-    setMessage('Server error while updating profile');
-  } finally {
-    setIsSaving(false);
-  }
-};
-
+  };
 
   const handleToggle2FA = async () => {
     const token = localStorage.getItem('token');
@@ -93,6 +96,15 @@ if (data.success) {
       setMessage('Server error while updating 2FA');
     }
   };
+
+  // ✅ Показываем спиннер до загрузки данных
+  if (isLoading) {
+    return (
+      <div className="container py-5 text-center">
+        <div className="spinner-border text-primary" role="status" />
+      </div>
+    );
+  }
 
   return (
     <div className="container py-5" style={{ maxWidth: '500px' }}>
