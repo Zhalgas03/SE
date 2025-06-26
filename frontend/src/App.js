@@ -10,6 +10,8 @@ import HomePage from './pages/HomePage';
 import PlannerPage from './pages/PlannerPage';
 import GoogleCallback from './components/GoogleCallback';
 import TestTripPost from './pages/TestTripPost';
+import AccountPage from './pages/AccountPage';
+import LoginSuccess from './pages/LoginSuccess';
 
 function AppContent() {
   const location = useLocation();
@@ -17,19 +19,6 @@ function AppContent() {
   const { setUser } = useUser();
   const hideNavbar = ['/login', '/register'].includes(location.pathname);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
-    const username = params.get("username");
-
-    if (token && username) {
-      localStorage.setItem("token", token);
-      localStorage.setItem("username", username);
-      setUser({ username });
-      navigate('/');
-      
-    }
-  }, []);
 
   return (
     <>
@@ -43,6 +32,8 @@ function AppContent() {
         <Route path="/planner" element={<PlannerPage />} />
         <Route path="/google/callback" element={<GoogleCallback />} />
         <Route path="/test-trip-post" element={<TestTripPost />} />
+        <Route path="/account" element={<AccountPage />} />
+        <Route path="/login-success" element={<LoginSuccess />} />
       </Routes>
     </>
   );

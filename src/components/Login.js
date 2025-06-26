@@ -59,10 +59,10 @@ function Login() {
       const data = await res.json();
       console.log("SERVER RESPONSE:", data);
 
-      if (data.success) {
-        setUser({ email: form.email, username: data.username });
-        navigate('/');
-      } else {
+if (data.success) {
+  setUser({ email: form.email, username: data.username }, data.token);
+  navigate('/');
+}else {
         setError(data.message || "Login failed");
         recaptchaRef.current.reset();
         setCaptchaToken('');
@@ -102,7 +102,7 @@ function Login() {
 <div className="mb-3 d-grid">
   <button
     className="btn btn-outline-dark"
-    onClick={() => window.location.href = "http://localhost:5001/github"}
+    onClick={() => window.location.href = "http://localhost:5001/api/github"}
     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
   >
     <img
