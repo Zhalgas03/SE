@@ -16,7 +16,11 @@ function ChatPanel() {
     setLoading(true);
 
     try {
+<<<<<<< HEAD
       const res = await fetch('http://localhost:5001/api/perplexity-chat', {
+=======
+      const res = await fetch('http://localhost:5000/api/ollama-chat', {
+>>>>>>> 276f72e77590322f9f8c422c79f4ba32443e7c4f
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: input })
@@ -33,7 +37,11 @@ function ChatPanel() {
   };
 
   useEffect(() => {
+<<<<<<< HEAD
     fetch('http://localhost:5001/api/chat/reset', {
+=======
+    fetch('http://localhost:5000/api/ollama-reset', {
+>>>>>>> 276f72e77590322f9f8c422c79f4ba32443e7c4f
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });

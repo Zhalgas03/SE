@@ -7,16 +7,26 @@ from requests_oauthlib import OAuth2Session
 import re
 import time
 
+<<<<<<< HEAD
 auth_bp = Blueprint("auth", __name__, url_prefix="/api")
 
 @auth_bp.route("/auth/google")
+=======
+auth_routes = Blueprint("auth", __name__, url_prefix="/api")
+
+@auth_routes.route("/auth/google")
+>>>>>>> 276f72e77590322f9f8c422c79f4ba32443e7c4f
 def google_login():
     google = OAuth2Session(Config.GOOGLE_CLIENT_ID, redirect_uri=Config.REDIRECT_URI, scope=["openid", "email", "profile"])
     auth_url, state = google.authorization_url("https://accounts.google.com/o/oauth2/auth", access_type="offline")
     session["oauth_state"] = state
     return redirect(auth_url)
 
+<<<<<<< HEAD
 @auth_bp.route("/auth/google/callback")
+=======
+@auth_routes.route("/auth/google/callback")
+>>>>>>> 276f72e77590322f9f8c422c79f4ba32443e7c4f
 def google_callback():
     google = OAuth2Session(Config.GOOGLE_CLIENT_ID, state=session["oauth_state"], redirect_uri=Config.REDIRECT_URI)
     token = google.fetch_token("https://oauth2.googleapis.com/token",
@@ -33,20 +43,37 @@ def google_callback():
             user = cur.fetchone()
 
             if not user:
+<<<<<<< HEAD
                 cur.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)",
+=======
+                cur.execute("INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)",
+>>>>>>> 276f72e77590322f9f8c422c79f4ba32443e7c4f
                             (name, email, generate_password_hash("google_dummy")))
                 conn.commit()
                 cur.execute("SELECT * FROM users WHERE email = %s", (email,))
                 user = cur.fetchone()
 
+<<<<<<< HEAD
         token = create_access_token(identity={'username': user['username'], 'email': user['email']})
         return redirect(f"http://localhost:3000?token={token}&username={user['username']}")
+=======
+        token = None
+        if user is not None:
+            token = create_access_token(identity={'username': user['username'], 'email': user['email']})
+            return redirect(f"http://localhost:3000?token={token}&username={user['username']}")
+        else:
+            return jsonify(success=False, message="User not found after registration"), 500
+>>>>>>> 276f72e77590322f9f8c422c79f4ba32443e7c4f
 
     except Exception as e:
         print("Google OAuth error:", str(e))
         return jsonify(success=False, message="OAuth error"), 500
 
+<<<<<<< HEAD
 @auth_bp.route("/register", methods=["POST"])
+=======
+@auth_routes.route("/register", methods=["POST"])
+>>>>>>> 276f72e77590322f9f8c422c79f4ba32443e7c4f
 def register():
     data = request.get_json()
     username = data.get("username", "").strip()
@@ -75,7 +102,11 @@ def register():
                 if cur.fetchone():
                     return jsonify(success=False, message="Username or email exists."), 409
 
+<<<<<<< HEAD
                 cur.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)",
+=======
+                cur.execute("INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)",
+>>>>>>> 276f72e77590322f9f8c422c79f4ba32443e7c4f
                             (username, email, hashed))
 
         token = create_access_token(identity={"username": username, "email": email})
@@ -85,7 +116,11 @@ def register():
         print("❌ Register error:", str(e))
         return jsonify(success=False, message="Server error"), 500
 
+<<<<<<< HEAD
 @auth_bp.route("/login", methods=["POST"])
+=======
+@auth_routes.route("/login", methods=["POST"])
+>>>>>>> 276f72e77590322f9f8c422c79f4ba32443e7c4f
 def login():
     data = request.get_json()
     email = data.get("email", "").strip()
@@ -100,7 +135,11 @@ def login():
             cur.execute("SELECT * FROM users WHERE email = %s", (email,))
             user = cur.fetchone()
 
+<<<<<<< HEAD
             if user and check_password_hash(user["password"], password):
+=======
+            if user is not None and check_password_hash(user["password_hash"], password):
+>>>>>>> 276f72e77590322f9f8c422c79f4ba32443e7c4f
                 token = create_access_token(identity={"username": user["username"], "email": user["email"]})
                 return jsonify(success=True, token=token, username=user["username"])
             else:
@@ -109,3 +148,11 @@ def login():
     except Exception as e:
         print("Login error:", str(e))
         return jsonify(success=False, message="Server error"), 500
+<<<<<<< HEAD
+=======
+
+@auth_routes.route('/user/profile', methods=['GET'])
+def user_profile():
+    # Dummy implementation for testing
+    return jsonify({"username": "test", "email": "test@example.com"}), 200
+>>>>>>> 276f72e77590322f9f8c422c79f4ba32443e7c4f

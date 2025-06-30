@@ -14,10 +14,27 @@ from models.email_2fa import generate_2fa_code, send_2fa_email
 from datetime import datetime, timedelta, timezone
 from flask_dance.contrib.github import make_github_blueprint, github   
 from flask import redirect, url_for, jsonify
+<<<<<<< HEAD
+=======
+import logging
+import traceback
+>>>>>>> 276f72e77590322f9f8c422c79f4ba32443e7c4f
 
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api")
 
+<<<<<<< HEAD
+=======
+# Set up logger for this module
+logger = logging.getLogger("auth_login")
+if not logger.hasHandlers():
+    handler = logging.StreamHandler()  # You can use FileHandler("login.log") for file logging
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
+>>>>>>> 276f72e77590322f9f8c422c79f4ba32443e7c4f
 @auth_bp.route("/me", methods=["GET"])
 @jwt_required()
 def get_current_user():
@@ -86,6 +103,7 @@ def register():
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
+<<<<<<< HEAD
 
     # Verify captcha
     def verify_captcha(token: str) -> bool:
@@ -112,10 +130,37 @@ def login():
         return make_response(jsonify(success=False, message="Email and password are required."), 400)
 
     try:
+=======
+    logger.info("Login attempt started")
+    try:
+        def verify_captcha(token: str) -> bool:
+            secret = Config.RECAPTCHA_SECRET_KEY
+            payload = {
+                'secret': secret,
+                'response': token
+            }
+            response = requests.post("https://www.google.com/recaptcha/api/siteverify", data=payload)
+            result = response.json()
+            return result.get("success", False)
+
+        data = request.get_json()
+        logger.info(f"Input received: {data}")
+        email = data.get('email', '').strip()
+        password_input = data.get('password', '')
+        captcha_token = data.get('captchaToken')
+        if not captcha_token or not verify_captcha(captcha_token):
+            logger.warning("CAPTCHA verification failed")
+            return make_response(jsonify(success=False, message="CAPTCHA verification failed"), 400)
+        if not all([email, password_input]):
+            logger.warning("Missing email or password")
+            return make_response(jsonify(success=False, message="Email and password are required."), 400)
+
+>>>>>>> 276f72e77590322f9f8c422c79f4ba32443e7c4f
         conn = get_db_connection()
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM users WHERE email = %s", (email,))
             user = cur.fetchone()
+<<<<<<< HEAD
             if user and check_password_hash(user['password_hash'], password_input):
                 username = user['username']
                 is_2fa_enabled = user.get('is_2fa_enabled', False)
@@ -126,6 +171,18 @@ def login():
                     expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
                     send_2fa_email(email, code)
 
+=======
+            logger.info(f"User found: {bool(user)}")
+            if user and check_password_hash(user['password_hash'], password_input):
+                logger.info("Password check passed")
+                username = user['username']
+                is_2fa_enabled = user.get('is_2fa_enabled', False)
+                if is_2fa_enabled:
+                    logger.info("2FA enabled, sending code to email")
+                    code = generate_2fa_code()
+                    expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
+                    send_2fa_email(email, code)
+>>>>>>> 276f72e77590322f9f8c422c79f4ba32443e7c4f
                     cur.execute("""
                         INSERT INTO email_2fa_codes (email, code, expires_at)
                         VALUES (%s, %s, %s)
@@ -133,6 +190,7 @@ def login():
                         DO UPDATE SET code = EXCLUDED.code, expires_at = EXCLUDED.expires_at
                     """, (email, code, expires_at))
                     conn.commit()
+<<<<<<< HEAD
 
                     return make_response(jsonify(success=True, message="Verification code sent to your email."), 200)
 
@@ -143,6 +201,22 @@ def login():
 
     except Exception as e:
         print("Login error:", str(e))
+=======
+                    logger.info("2FA code sent and saved to DB")
+                    return make_response(jsonify(success=True, message="Verification code sent to your email."), 200)
+                else:
+                    access_token = create_access_token(identity=username)
+                    logger.info("JWT created, login successful")
+                    return make_response(jsonify(success=True, token=access_token, username=username), 200)
+            else:
+                logger.warning("Invalid email or password")
+                return make_response(jsonify(success=False, message="Invalid email or password"), 401)
+    except Exception as e:
+        logger.error("Exception during login: %s\n%s", str(e), traceback.format_exc())
+        # Print real exception for debugging
+        print("Login error:", str(e))
+        print(traceback.format_exc())
+>>>>>>> 276f72e77590322f9f8c422c79f4ba32443e7c4f
         return make_response(jsonify(success=False, message="Server error"), 500)
 
     # Explicit fallback return for type checker
