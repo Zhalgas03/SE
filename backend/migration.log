@@ -1,0 +1,105 @@
+2025-06-30 02:01:29,578 - INFO - ============================================================
+2025-06-30 02:01:29,578 - INFO - Trip Management System - Migration Runner
+2025-06-30 02:01:29,578 - INFO - ============================================================
+2025-06-30 02:01:29,578 - ERROR - Missing required environment variables: DB_HOST, DB_NAME, DB_USER
+2025-06-30 02:01:29,579 - ERROR - Please set DATABASE_URL or individual DB_* variables
+2025-06-30 02:01:37,952 - INFO - ============================================================
+2025-06-30 02:01:37,952 - INFO - Trip Management System - Migration Runner
+2025-06-30 02:01:37,952 - INFO - ============================================================
+2025-06-30 02:01:37,952 - INFO - Starting migration execution...
+2025-06-30 02:01:41,526 - INFO - Successfully connected to database
+2025-06-30 02:01:42,003 - WARNING - Found existing tables: trips, voting_rules, votes
+2025-06-30 02:01:42,004 - INFO - Migration will skip existing tables (safe additive migration)
+2025-06-30 02:01:42,004 - INFO - Migration SQL loaded successfully
+2025-06-30 02:01:42,004 - INFO - Executing migration SQL...
+2025-06-30 02:01:43,444 - ERROR - Migration failed: column "id" referenced in foreign key constraint does not exist
+CONTEXT:  SQL statement "CREATE TABLE trip_group (
+            -- Primary key
+            id SERIAL PRIMARY KEY,
+            
+            -- Relationships
+            trip_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            
+            -- User role in the trip
+            role user_role DEFAULT 'member',
+            
+            -- Metadata
+            joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            
+            -- Constraints
+            CONSTRAINT fk_trip_group_trip FOREIGN KEY (trip_id) REFERENCES trips(id) ON DELETE CASCADE,
+            CONSTRAINT fk_trip_group_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            -- Ensure one membership per user per trip
+            CONSTRAINT unique_trip_membership UNIQUE (trip_id, user_id)
+        )"
+PL/pgSQL function inline_code_block line 5 at SQL statement
+
+2025-06-30 02:01:43,445 - ERROR - Please check the migration.log file for details
+2025-06-30 02:01:43,445 - ERROR - Migration failed!
+2025-06-30 02:03:39,610 - INFO - ============================================================
+2025-06-30 02:03:39,610 - INFO - Trip Management System - Migration Runner
+2025-06-30 02:03:39,610 - INFO - ============================================================
+2025-06-30 02:03:39,611 - INFO - Starting migration execution...
+2025-06-30 02:03:40,310 - INFO - Successfully connected to database
+2025-06-30 02:03:40,796 - WARNING - Found existing tables: trips, voting_rules, votes
+2025-06-30 02:03:40,796 - INFO - Migration will skip existing tables (safe additive migration)
+2025-06-30 02:03:40,796 - INFO - Migration SQL loaded successfully
+2025-06-30 02:03:40,796 - INFO - Executing migration SQL...
+2025-06-30 02:03:41,036 - ERROR - Migration failed: type "trip_status" does not exist
+LINE 17:             status trip_status DEFAULT 'draft',
+                            ^
+QUERY:  CREATE TABLE trips (
+            -- Primary key
+            id SERIAL PRIMARY KEY,
+            
+            -- Basic trip information
+            name VARCHAR(255) NOT NULL,
+            description TEXT,
+            
+            -- Creator relationship (matches existing raw SQL expectations)
+            creator_id INTEGER NOT NULL,
+            
+            -- Trip dates
+            date_start TIMESTAMP,
+            date_end TIMESTAMP,
+            
+            -- Trip status (new field for enhanced functionality)
+            status trip_status DEFAULT 'draft',
+            
+            -- PDF file information (new fields for /api/save_trip functionality)
+            pdf_file_path VARCHAR(500),
+            pdf_file_name VARCHAR(255),
+            pdf_file_size INTEGER,
+            pdf_data BYTEA,  -- Keep existing pdf_data column for backward compatibility
+            
+            -- Metadata
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            
+            -- Constraints
+            CONSTRAINT fk_trips_creator FOREIGN KEY (creator_id) REFERENCES users(user_id) ON DELETE CASCADE,
+            CONSTRAINT chk_trip_dates CHECK (date_end IS NULL OR date_start IS NULL OR date_end >= date_start),
+            CONSTRAINT chk_pdf_file_size CHECK (pdf_file_size IS NULL OR pdf_file_size >= 0)
+        )
+CONTEXT:  PL/pgSQL function inline_code_block line 22 at SQL statement
+
+2025-06-30 02:03:41,036 - ERROR - Please check the migration.log file for details
+2025-06-30 02:03:41,037 - ERROR - Migration failed!
+2025-06-30 02:03:53,825 - INFO - ============================================================
+2025-06-30 02:03:53,825 - INFO - Trip Management System - Migration Runner
+2025-06-30 02:03:53,825 - INFO - ============================================================
+2025-06-30 02:03:53,825 - INFO - Starting migration execution...
+2025-06-30 02:03:54,637 - INFO - Successfully connected to database
+2025-06-30 02:03:55,126 - WARNING - Found existing tables: trips, voting_rules, votes
+2025-06-30 02:03:55,127 - INFO - Migration will skip existing tables (safe additive migration)
+2025-06-30 02:03:55,129 - INFO - Migration SQL loaded successfully
+2025-06-30 02:03:55,129 - INFO - Executing migration SQL...
+2025-06-30 02:03:55,768 - INFO - Migration SQL executed successfully
+2025-06-30 02:03:55,768 - INFO - Verifying migration results...
+2025-06-30 02:03:56,247 - INFO - Successfully created/verified tables: trips, voting_rules, votes, trip_group
+2025-06-30 02:03:56,357 - INFO - Created enum types: trip_status, vote_type, user_role
+2025-06-30 02:03:56,477 - INFO - Created functions: can_user_vote_on_trip, get_trip_voting_status, update_updated_at_column
+2025-06-30 02:03:56,478 - INFO - Migration completed successfully in 0:00:02.652668
+2025-06-30 02:03:56,478 - INFO - All trip management tables, enums, and functions are ready!
+2025-06-30 02:03:56,478 - INFO - Migration completed successfully!
