@@ -9,7 +9,7 @@ import AuthLayout from './layouts/AuthLayout';
 import HomePage from './pages/HomePage';
 import PlannerPage from './pages/PlannerPage';
 import GoogleCallback from './components/GoogleCallback';
-import TestTripPost from './pages/TestTripPost';
+
 import AccountPage from './pages/AccountPage';
 import LoginSuccess from './pages/LoginSuccess';
 import ForgotPassword from './components/ForgotPassword';
@@ -36,7 +36,7 @@ function AppContent() {
   <Route path="/" element={<HomePage />} />
   <Route path="/planner" element={<PlannerPage />} />
   <Route path="/google/callback" element={<GoogleCallback />} />
-  <Route path="/test-trip-post" element={<TestTripPost />} />
+
   <Route path="/account" element={<AccountPage />} />
   <Route path="/login-success" element={<LoginSuccess />} />
 </Routes>

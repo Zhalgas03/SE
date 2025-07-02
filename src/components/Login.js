@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import ReCAPTCHA from 'react-google-recaptcha';
+import { FaEye, FaEyeSlash } from 'react-icons/fa'; 
 
 function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -14,7 +15,8 @@ function Login() {
   const [resendTimer, setResendTimer] = useState(30);
   const timerRef = useRef(null);
   const recaptchaRef = useRef(null);
-
+const [showPassword, setShowPassword] = useState(false);
+const [passwordFocused, setPasswordFocused] = useState(false);
   const { setUser } = useUser();
   const navigate = useNavigate();
 
@@ -152,21 +154,6 @@ function Login() {
         <img src="/logo.png" alt="Trip DVisor" style={{ height: '50px' }} />
       </div>
 
-      <div className="mb-3 d-grid">
-        <a
-          className="btn btn-outline-dark google-btn"
-          href="https://3955-192-167-110-47.ngrok-free.app"
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-        >
-          <img
-            src="https://developers.google.com/identity/images/g-logo.png"
-            alt="Google"
-            width="20"
-            height="20"
-          />
-          Sign in with Google
-        </a>
-      </div>
 
       <div className="mb-3 d-grid">
         <button
@@ -200,16 +187,35 @@ function Login() {
         )}
       </div>
 
-<div className="mb-3">
+<div className="mb-3 position-relative">
   <label>Password</label>
   <input
     name="password"
-    type="password"
-    className="form-control"
+    type={showPassword ? "text" : "password"}
+    className="form-control pe-5"
     onChange={handleChange}
+    onFocus={() => setPasswordFocused(true)}
+    onBlur={() => setPasswordFocused(false)}
     required
-    style={{ marginBottom: '0.2rem' }} // ⬅️ добавим отступ под полем
+    style={{ marginBottom: '0.2rem' }}
   />
+  
+    <span
+      className="position-absolute"
+      style={{
+        top: '46%',
+        right: '12px',
+        transform: 'translateY(-50%)',
+        cursor: 'pointer',
+        color: '#888',
+        fontSize: '1.1rem',
+        lineHeight: '1'
+      }}
+      onClick={() => setShowPassword(prev => !prev)}
+    >
+      {showPassword ? <FaEyeSlash /> : <FaEye />}
+    </span>
+
   <div className="text-end">
     <Link
       to="/forgot-password"
@@ -220,6 +226,7 @@ function Login() {
     </Link>
   </div>
 </div>
+
 
 
       <div className="mb-3">
