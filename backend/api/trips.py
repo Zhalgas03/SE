@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from db import get_db_connection
+from psycopg2.extras import RealDictCursor
 
 trips_bp = Blueprint("trips", __name__, url_prefix="/api/trips")
 
@@ -22,7 +23,7 @@ def create_trip():
     try:
         conn = get_db_connection()
         with conn:
-            with conn.cursor() as cur:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 # Поиск по username
                 cur.execute("SELECT id FROM users WHERE username = %s", (user,))
                 user_row = cur.fetchone()
@@ -36,7 +37,10 @@ def create_trip():
                     INSERT INTO trips (name, creator_id, date_start, date_end)
                     VALUES (%s, %s, %s, %s) RETURNING id
                 """, (name, creator_id, date_start, date_end))
-                trip_id = cur.fetchone()['id']
+                result = cur.fetchone()
+                if not result:
+                    return jsonify(success=False, message="Failed to create trip."), 500
+                trip_id = result['id']
 
                 # Вставка в trip_group
                 cur.execute("""
@@ -61,7 +65,7 @@ def get_trips():
     try:
         conn = get_db_connection()
         with conn:
-            with conn.cursor() as cur:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 # Получить ID пользователя по email
                 cur.execute("SELECT id FROM users WHERE username = %s", (user_login,))
                 user_row = cur.fetchone()

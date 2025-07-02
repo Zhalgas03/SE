@@ -4,6 +4,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from config import Config
 import os
 from db import get_db_connection
+from utils.email_notify import send_email_notification
+
 
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
@@ -65,6 +67,12 @@ def stripe_webhook():
                         WHERE username = %s
                     """, (username,))
                     conn.commit()
+                send_email_notification(
+                username=username,
+                subject="Subscription Activated",
+                message="Thank you for subscribing to TripDVisor Premium! You now have access to exclusive features."
+                )
+
                 print(f"[Webhook] Subscription activated for: {username}")
             except Exception as e:
                 print("[Webhook DB error]", e)

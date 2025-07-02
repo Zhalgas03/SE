@@ -5,6 +5,8 @@ from db import get_db_connection
 from psycopg2.extras import RealDictCursor
 from models.userclass import UserDict
 from utils.notify import create_notification
+from utils.email_notify import send_email_notification
+
 
 
 user_bp = Blueprint("user", __name__, url_prefix="/api/user")
@@ -86,6 +88,11 @@ def toggle_2fa():
                 title = "2FA Enabled" if enable_2fa else "2FA Disabled"
                 message = "You have enabled two-factor authentication." if enable_2fa else "You have disabled two-factor authentication."
                 create_notification(user["user_id"], title, message)
+                send_email_notification(
+                    username=username,
+                    subject=title,
+                    message=message
+                )
 
 
         return jsonify(success=True, message=f"2FA {'enabled' if enable_2fa else 'disabled'}"), 200

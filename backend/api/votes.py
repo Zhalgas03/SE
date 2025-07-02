@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from db import get_db_connection
+from psycopg2.extras import RealDictCursor
+from utils.email_notify import send_email_notification
 
 votes_bp = Blueprint("votes", __name__, url_prefix="/api/votes")
 
@@ -18,7 +20,7 @@ def vote_on_trip(trip_id):
     try:
         conn = get_db_connection()
         with conn:
-            with conn.cursor() as cur:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 # Получаем user_id по username
                 cur.execute("SELECT id FROM users WHERE username = %s", (username,))
                 user_row = cur.fetchone()
@@ -44,6 +46,48 @@ def vote_on_trip(trip_id):
                     INSERT INTO votes (trip_id, user_id, value)
                     VALUES (%s, %s, %s)
                 """, (trip_id, user_id, value))
+
+                # Проверяем, нужно ли завершить голосование
+                cur.execute("SELECT COUNT(*) FROM votes WHERE trip_id = %s", (trip_id,))
+                result = cur.fetchone()
+                if not result or result["count"] is None:
+                    return jsonify(success=False, message="Vote count error."), 500
+                total_votes = result["count"]
+
+                if total_votes >= rule["min_voters"]:
+                    cur.execute("SELECT SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END) FROM votes WHERE trip_id = %s", (trip_id,))
+                    result = cur.fetchone()
+                    if not result or result["sum"] is None:
+                        return jsonify(success=False, message="Vote sum error."), 500
+                    yes_votes = result["sum"]
+                    threshold = rule["threshold"]
+                    approval_ratio = yes_votes / total_votes
+
+                    if approval_ratio >= threshold:
+                        new_status = "approved"
+                    elif (1 - approval_ratio) >= threshold:
+                        new_status = "rejected"
+                    else:
+                        new_status = None  # недостаточно явного большинства
+
+                    if new_status:
+                        cur.execute("UPDATE trips SET status = %s WHERE trip_id = %s", (new_status, trip_id))
+
+                        # Уведомим всех, кто голосовал
+                        cur.execute("""
+                            SELECT u.username FROM votes v
+                            JOIN users u ON v.user_id = u.id
+                            WHERE v.trip_id = %s
+                        """, (trip_id,))
+                        voters = cur.fetchall()
+
+                        for voter in voters:
+                            send_email_notification(
+                                username=voter["username"],
+                                subject=f"Trip Voting Result: {new_status.upper()}",
+                                message=f"The voting for Trip #{trip_id} is over. Final status: {new_status.upper()}."
+                            )
+
 
         return jsonify(success=True, message="Vote submitted"), 201
 

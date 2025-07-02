@@ -9,7 +9,7 @@ from typing import Any, Dict
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import requests
 import os
-from models.email_2fa import generate_2fa_code, send_2fa_email
+from utils.email_notify import generate_2fa_code, send_email_notification
 from datetime import datetime, timedelta, timezone
 from flask_dance.contrib.github import make_github_blueprint, github   
 from flask import redirect, url_for, jsonify
@@ -27,8 +27,6 @@ def get_current_user():
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
-    
-    # Verify captcha
     def verify_captcha(token: str) -> bool:
         secret = Config.RECAPTCHA_SECRET_KEY
         payload = {
@@ -38,8 +36,7 @@ def register():
         response = requests.post("https://www.google.com/recaptcha/api/siteverify", data=payload)
         result = response.json()
         return result.get("success", False)
-    
-    # Get data from request
+
     data = request.get_json()
     captcha_token = data.get('captchaToken')
     if not captcha_token or not verify_captcha(captcha_token):
@@ -66,24 +63,27 @@ def register():
     try:
         conn = get_db_connection()
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # 1. Проверка, существует ли пользователь
             cur.execute("SELECT * FROM users WHERE username=%s OR email=%s", (username, email))
             if cur.fetchone():
                 return jsonify(success=False, message="Username or email already exists."), 409
 
-        cur.execute(
-            """
-            INSERT INTO users (username, email, password_hash, role, is_subscribed)
-            VALUES (%s, %s, %s, %s, %s)
-            """,
-        (username, email, hashed_password, 'user', False)
-    )
-        conn.commit()
+            # 2. Вставка нового пользователя
+            cur.execute("""
+                INSERT INTO users (username, email, password_hash, role, is_subscribed)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (username, email, hashed_password, 'user', False))
 
+            conn.commit()
+
+        # 3. Генерация JWT
         access_token = create_access_token(identity=username)
         return jsonify(success=True, token=access_token, username=username), 200
+
     except Exception as e:
         print("❌ Register error:", str(e))
         return jsonify(success=False, message="Unexpected server error"), 500
+
 
 
 @auth_bp.route("/login", methods=["POST"])
@@ -126,7 +126,7 @@ def login():
                     # 2FA включена → отправляем код
                     code = generate_2fa_code()
                     expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
-                    send_2fa_email(email, code)
+                    send_email_notification(email, "2FA Verification Code", f"Your verification code is: {code}")
 
                     cur.execute("""
                         INSERT INTO email_2fa_codes (email, code, expires_at)
