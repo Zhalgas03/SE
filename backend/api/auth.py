@@ -2,7 +2,6 @@ from flask import Blueprint, request, jsonify, redirect, session, make_response
 from flask_jwt_extended import create_access_token
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import get_db_connection
-from services.oauth_service import get_google_auth, get_user_info
 from config import Config
 import re
 from psycopg2.extras import RealDictCursor
@@ -71,11 +70,14 @@ def register():
             if cur.fetchone():
                 return jsonify(success=False, message="Username or email already exists."), 409
 
-            cur.execute(
-                "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)",
-                (username, email, hashed_password)
-            )
-            conn.commit()
+        cur.execute(
+            """
+            INSERT INTO users (username, email, password_hash, role, is_subscribed)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+        (username, email, hashed_password, 'user', False)
+    )
+        conn.commit()
 
         access_token = create_access_token(identity=username)
         return jsonify(success=True, token=access_token, username=username), 200
