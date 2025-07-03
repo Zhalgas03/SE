@@ -14,14 +14,13 @@ function TripVisualizer() {
   const handleSaveToPDF = async () => {
     setIsGeneratingPDF(true);
 
-    // 🔓 1. Принудительно раскрываем все Accordion'ы
     const collapses = document.querySelectorAll('.accordion-collapse');
     collapses.forEach(el => {
-      el.classList.add('show');     // класс Bootstrap, делает body видимым
-      el.style.height = 'auto';     // гарантирует высоту
+      el.classList.add('show');
+      el.style.height = 'auto';
     });
 
-    await new Promise(resolve => setTimeout(resolve, 500)); // Ждём отрисовки
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     const input = pdfRef.current;
     if (!input) {
@@ -56,7 +55,6 @@ function TripVisualizer() {
       alert('Failed to generate PDF: ' + error.message);
       console.error(error);
     } finally {
-      // 🔒 2. Возвращаем всё назад (чистим show и height)
       collapses.forEach(el => {
         el.classList.remove('show');
         el.style.height = '';
@@ -67,7 +65,7 @@ function TripVisualizer() {
   };
 
   return (
-    <div className="px-4 py-4" style={{ backgroundColor: '#f9f9f9' }}>
+    <div className="trip-visualizer-container px-4 py-4 rounded-4">
       <div className="text-end mb-3">
         <button className="btn btn-outline-secondary" onClick={handleSaveToPDF}>
           Save to PDF

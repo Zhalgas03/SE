@@ -21,7 +21,19 @@ const [editingUsername, setEditingUsername] = useState(false);
 const [editingEmail, setEditingEmail] = useState(false);
 
 const [isToggling2FA, setIsToggling2FA] = useState(false);
+const [isDarkTheme, setIsDarkTheme] = useState(() =>
+  document.body.classList.contains('dark-theme')
+);
 
+useEffect(() => {
+  const observer = new MutationObserver(() => {
+    setIsDarkTheme(document.body.classList.contains('dark-theme'));
+  });
+
+  observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+  return () => observer.disconnect(); // Очистка при размонтировании
+}, []);
   // 🔹 Получение профиля
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -256,7 +268,7 @@ return (
     />
   )}
 </div>
-<div className="form-check form-switch mb-4 d-flex align-items-center gap-2">
+<div className="form-check form-switch mb-4 d-flex align-items-center gap-3">
   <input
     className="form-check-input"
     type="checkbox"
@@ -362,7 +374,11 @@ return (
 {/* INDIVIDUAL PLAN */}
 <div className="col">
   <div className="premium-card-light d-flex flex-column rounded-4 p-4 h-100 border text-start">
-    <img src="premium.png" alt="Premium" className="logo-premium" />
+    <img
+  src={isDarkTheme ? 'premium_alt.png' : 'premium.png'}
+  alt="Premium"
+  className="logo-premium"
+/>
     <h4 className="fw-bold text-primary">Individual</h4>
     <p className="text-muted mb-3">€5.00 / month</p>
     <hr />
@@ -384,7 +400,11 @@ return (
         {/* DUO PLAN */}
 <div className="col">
   <div className="premium-card-light d-flex flex-column rounded-4 p-4 h-100 border text-start">
-    <img src="premium.png" alt="Premium" className="logo-premium" />
+    <img
+  src={isDarkTheme ? 'premium_alt.png' : 'premium.png'}
+  alt="Premium"
+  className="logo-premium"
+/>
     <h4 className="fw-bold text-success">Duo</h4>
     <p className="text-muted mb-3">€8.00 / month</p>
     <hr />

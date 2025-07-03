@@ -14,6 +14,8 @@ import AccountPage from './pages/AccountPage';
 import LoginSuccess from './pages/LoginSuccess';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
+import Success from './pages/Success';
+import Cancel from './pages/Cancel';
 function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -39,6 +41,9 @@ function AppContent() {
 
   <Route path="/account" element={<AccountPage />} />
   <Route path="/login-success" element={<LoginSuccess />} />
+
+    <Route path="/success" element={<Success />} />
+  <Route path="/cancel" element={<Cancel />} />
 </Routes>
 
     </>

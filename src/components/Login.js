@@ -22,6 +22,11 @@ const [passwordFocused, setPasswordFocused] = useState(false);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+
+useEffect(() => {
+  localStorage.setItem('theme', 'light');
+  document.body.classList.remove('dark-theme'); // <== это ключевая строка!
+}, []);
   useEffect(() => {
     if (show2FA && resendTimer > 0) {
       timerRef.current = setInterval(() => {
