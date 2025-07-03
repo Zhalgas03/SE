@@ -353,55 +353,66 @@ return (
       </div>
 
       {/* Правая колонка — подписка */}
-      <div className="col-md-7">
-        {!isSubscribed ? (
-          <div className="card shadow-sm rounded-4 p-4">
-            <h4 className="mb-4 text-center fw-bold fs-4 text-dark">Upgrade to Premium</h4>
-            <div className="row row-cols-1 row-cols-md-2 g-4">
+ <div className="col-md-7">
+  {!isSubscribed ? (
+    <div className="premium-wrapper-light p-4 rounded-4 bg-white shadow-sm">
+      <h4 className="mb-4 text-center fw-bold fs-4 text-dark">Upgrade to Premium</h4>
+      <div className="row row-cols-1 row-cols-md-2 g-2">
 
-              {/* INDIVIDUAL PLAN */}
-<div className="premium-card d-flex flex-column bg-white p-4 rounded-4 border border-primary shadow-sm position-relative">
-  <span className="badge bg-danger position-absolute top-0 end-0 m-2">Best Value</span>
-  <h4 className="fw-bold text-primary mb-2">Premium Individual</h4>
-  <p className="text-dark fw-semibold mb-3">€5.00 / month</p>
-  <ul className="list-unstyled small mb-4 text-dark">
-    <li>✔️ 1 Premium account</li>
-    <li>✔️ Weekly AI travel plans</li>
-    <li>✔️ Voting access & early features</li>
-    <li>✔️ Cancel anytime</li>
-  </ul>
-  <div className="mt-auto">
-    <button onClick={handleSubscribe} className="btn btn-primary w-100">
+{/* INDIVIDUAL PLAN */}
+<div className="col">
+  <div className="premium-card-light d-flex flex-column rounded-4 p-4 h-100 border text-start">
+    <img src="premium.png" alt="Premium" className="logo-premium" />
+    <h4 className="fw-bold text-primary">Individual</h4>
+    <p className="text-muted mb-3">€5.00 / month</p>
+    <hr />
+    <ul className="list-unstyled mb-4 small text-dark">
+      <li>• 1 Premium account</li>
+      <li>• Weekly AI travel plans</li>
+      <li>• Voting access & early features</li>
+      <li>• Cancel anytime</li>
+    </ul>
+    <button className="btn btn-primary rounded-pill fw-semibold mt-auto" onClick={handleSubscribe}>
       Get Premium
     </button>
+    <p className="mt-3 text-muted small">
+      €0 for 1 month, then €5.00/month after. Cancel anytime.
+    </p>
   </div>
 </div>
 
-              {/* DUO PLAN */}
-              <div className="col">
-                <div className="premium-card bg-white p-4 rounded-4 border h-100 shadow-sm text-muted">
-                  <h4 className="fw-bold text-success mb-2">Premium Duo</h4>
-                  <p className="text-dark fw-semibold mb-3">€8.00 / month</p>
-                  <ul className="list-unstyled small mb-4">
-                    <li>✔️ 2 Premium accounts</li>
-                    <li>✔️ For couples or roommates</li>
-                    <li>✔️ AI travel shared planner</li>
-                    <li>✔️ Cancel anytime</li>
-                  </ul>
-                  <button className="btn btn-success w-100" disabled title="Coming soon">
-                    Coming Soon
-                  </button>
-                </div>
-              </div>
+        {/* DUO PLAN */}
+<div className="col">
+  <div className="premium-card-light d-flex flex-column rounded-4 p-4 h-100 border text-start">
+    <img src="premium.png" alt="Premium" className="logo-premium" />
+    <h4 className="fw-bold text-success">Duo</h4>
+    <p className="text-muted mb-3">€8.00 / month</p>
+    <hr />
+    <ul className="list-unstyled mb-4 small text-dark">
+      <li>• 2 Premium accounts</li>
+      <li>• Shared AI travel planner</li>
+      <li>• Early access features</li>
+      <li>• Cancel anytime</li>
+    </ul>
+    <button className="btn btn-outline-success rounded-pill fw-semibold mt-auto" disabled>
+      Coming Soon
+    </button>
+    <p className="mt-3 text-muted small">
+      For couples who live together. Available soon.
+    </p>
+  </div>
+</div>
 
-            </div>
-          </div>
-        ) : (
-          <div className="alert alert-success mt-3 text-center fw-semibold fs-5">
-            🎉 You are a Premium user
-          </div>
-        )}
+
       </div>
+    </div>
+  ) : (
+    <div className="alert alert-success mt-3 text-center fw-semibold fs-5">
+      🎉 You are a Premium user
+    </div>
+  )}
+</div>
+
     </div>
   </div>
 );

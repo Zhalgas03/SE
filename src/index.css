@@ -16,16 +16,68 @@ code {
   height: calc(100vh - 56px); /* Bootstrap navbar по умолчанию */
 }
 
-.google-btn {
-  background-color: white !important;
-  border-color: #ddd !important;
-  color: #444 !important;
-  text-decoration: none;
+
+.logo-premium {
+  height: 20px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  display: inline-block;
 }
 
-.google-btn:hover {
-  background-color: white !important;
-  color: #444 !important;
-  text-decoration: none;
+/* === Карточка без hover-анимации === */
+.premium-card-light {
+  background-color: #fdfdfd;
+  border-radius: 1rem;
+  transition: none; /* убрали анимацию */
 }
 
+/* === Кнопка: плавный hover-эффект === */
+.btn-primary,
+.btn-outline-success {
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #1669d3;
+}
+
+.btn-outline-success:hover:not(:disabled) {
+  background-color: #2e7d32;
+  color: white;
+  border-color: #2e7d32;
+}
+
+/* === Иконка Premium слева === */
+.premium-card-light {
+  text-align: left;
+  background-color: #fdfdfd;
+  border-radius: 1rem;
+}
+
+.logo-premium {
+  height: 20px;
+  width: auto;
+  display: inline-block;
+  margin-bottom: 0.75rem;
+}
+
+
+.logo-premium {
+  height: 20px;
+  width: auto;
+  display: block; /* ⬅️ ключевой момент */
+  margin-left: 0 !important; /* ⬅️ анти-центрирование */
+  margin-right: auto !important; /* ⬅️ прижимаем к левому краю */
+  margin-bottom:0.3rem;
+}
+
+.premium-card-light h4 {
+  margin-bottom: 0.25rem; /* 👈 уменьшить расстояние между h4 и ценой */
+}
+
+.premium-card-light p {
+  margin-bottom: 0rem; /* 👈 уменьшить расстояние до списка */
+  font-size: 0.9rem;
+  font-weight:500;
+}

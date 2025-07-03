@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, Accordion } from 'react-bootstrap';
 import MapPreview from '../MapPreview';
 
-function TripItinerary() {
+function TripItinerary({ isGeneratingPDF }) {
   const days = [
     { header: "Day 1: Arrival in Rome", content: "Arrival, hotel check-in, and evening walk in the historic center." },
     { header: "Day 2: Ancient Rome & Colosseum", content: "Explore the Colosseum, Roman Forum, and enjoy a traditional Roman dinner." },
@@ -11,7 +11,7 @@ function TripItinerary() {
   ];
 
   return (
-    <Card className="mb-4 shadow-sm">
+    <Card className="mb-4 shadow-sm" style={{ overflow: 'visible' }}>
       <Card.Body>
         <h5 className="fw-bold mb-3">Itinerary</h5>
         <p>
@@ -20,18 +20,32 @@ function TripItinerary() {
           atmosphere, stroll scenic alleys, and enjoy gelato near Trevi Fountain.
         </p>
 
-        <div className="rounded-3 overflow-hidden mb-4" style={{ height: '260px' }}>
-          <MapPreview />
-        </div>
+        {/* ❌ Не рендерим карту при генерации PDF */}
+{!isGeneratingPDF && (
+  <div className="rounded-3" style={{ height: '260px', marginBottom: '2.5rem' }}>
+    <MapPreview />
+  </div>
+)}
 
-        <Accordion defaultActiveKey="0">
-          {days.map((d, i) => (
-            <Accordion.Item eventKey={i.toString()} key={i}>
-              <Accordion.Header>{d.header}</Accordion.Header>
-              <Accordion.Body>{d.content}</Accordion.Body>
-            </Accordion.Item>
-          ))}
-        </Accordion>
+        {isGeneratingPDF ? (
+          <div>
+            {days.map((d, i) => (
+              <div key={i} className="mb-3">
+                <h6 className="fw-bold">{d.header}</h6>
+                <p>{d.content}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Accordion defaultActiveKey="0">
+            {days.map((d, i) => (
+              <Accordion.Item eventKey={i.toString()} key={i}>
+                <Accordion.Header>{d.header}</Accordion.Header>
+                <Accordion.Body>{d.content}</Accordion.Body>
+              </Accordion.Item>
+            ))}
+          </Accordion>
+        )}
       </Card.Body>
     </Card>
   );
