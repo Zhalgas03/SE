@@ -4,7 +4,8 @@ from datetime import datetime, timedelta, timezone
 from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash
 from utils.email_notify import send_email_notification, generate_2fa_code
-
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from werkzeug.security import check_password_hash
 reset_bp = Blueprint("password_reset", __name__, url_prefix="/api")
 
 @reset_bp.route("/forgot-password", methods=["POST"])
@@ -96,4 +97,57 @@ def reset_password():
 
     except Exception as e:
         print("❌ Reset password error:", str(e))
+        return jsonify(success=False, message="Server error"), 500
+
+
+
+@reset_bp.route("/change-password", methods=["POST"])
+@jwt_required()
+def change_password():
+    data = request.get_json()
+    current = data.get("currentPassword", "").strip()
+    new = data.get("newPassword", "").strip()
+
+    if not current or not new:
+        return jsonify(success=False, message="Both current and new passwords are required"), 400
+
+    if current == new:
+        return jsonify(success=False, message="New password cannot be the same as the current one"), 400
+
+    if len(new) < 8 or not any(c.isdigit() for c in new) or not any(c.isalpha() for c in new):
+        return jsonify(success=False, message="New password must be at least 8 characters and include letters and digits"), 400
+
+    try:
+        user_identity = get_jwt_identity()  # Это username, если ты сохраняешь его как identity при login/register
+
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # Найти пользователя по username
+            cur.execute("SELECT password_hash, email, username FROM users WHERE username = %s", (user_identity,))
+            user = cur.fetchone()
+
+            if not user:
+                return jsonify(success=False, message="User not found"), 404
+
+            if not check_password_hash(user["password_hash"], current):
+                return jsonify(success=False, message="Incorrect current password"), 401
+
+            if check_password_hash(user["password_hash"], new):
+                return jsonify(success=False, message="New password must be different from the current one"), 400
+
+            new_hashed = generate_password_hash(new)
+            cur.execute("UPDATE users SET password_hash = %s WHERE username = %s", (new_hashed, user_identity))
+
+            # Уведомление по email
+            send_email_notification(
+                username=user["username"],
+                subject="Password Changed",
+                message="Your TripDVisor password was changed successfully. If this wasn't you, contact support."
+            )
+
+            conn.commit()
+            return jsonify(success=True, message="Password changed successfully"), 200
+
+    except Exception as e:
+        print("❌ Change password error:", str(e))
         return jsonify(success=False, message="Server error"), 500

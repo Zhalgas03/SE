@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import ReCAPTCHA from 'react-google-recaptcha';
+import { FaEye, FaEyeSlash } from 'react-icons/fa'; 
 
 function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -14,12 +15,18 @@ function Login() {
   const [resendTimer, setResendTimer] = useState(30);
   const timerRef = useRef(null);
   const recaptchaRef = useRef(null);
-
+const [showPassword, setShowPassword] = useState(false);
+const [passwordFocused, setPasswordFocused] = useState(false);
   const { setUser } = useUser();
   const navigate = useNavigate();
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+
+useEffect(() => {
+  localStorage.setItem('theme', 'light');
+  document.body.classList.remove('dark-theme'); // <== это ключевая строка!
+}, []);
   useEffect(() => {
     if (show2FA && resendTimer > 0) {
       timerRef.current = setInterval(() => {
@@ -152,21 +159,6 @@ function Login() {
         <img src="/logo.png" alt="Trip DVisor" style={{ height: '50px' }} />
       </div>
 
-      <div className="mb-3 d-grid">
-        <a
-          className="btn btn-outline-dark google-btn"
-          href="https://3955-192-167-110-47.ngrok-free.app"
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-        >
-          <img
-            src="https://developers.google.com/identity/images/g-logo.png"
-            alt="Google"
-            width="20"
-            height="20"
-          />
-          Sign in with Google
-        </a>
-      </div>
 
       <div className="mb-3 d-grid">
         <button
@@ -200,23 +192,69 @@ function Login() {
         )}
       </div>
 
-      <div className="mb-3">
-        <label>Password</label>
-        <input
-          name="password"
-          type="password"
-          className="form-control"
-          onChange={handleChange}
-          required
-        />
-      </div>
+<div className="mb-3 position-relative">
+  <label>Password</label>
+  <input
+    name="password"
+    type={showPassword ? "text" : "password"}
+    className="form-control pe-5"
+    onChange={handleChange}
+    onFocus={() => setPasswordFocused(true)}
+    onBlur={() => setPasswordFocused(false)}
+    required
+    style={{ marginBottom: '0.2rem' }}
+  />
+  
+    <span
+      className="position-absolute"
+      style={{
+        top: '46%',
+        right: '12px',
+        transform: 'translateY(-50%)',
+        cursor: 'pointer',
+        color: '#888',
+        fontSize: '1.1rem',
+        lineHeight: '1'
+      }}
+      onClick={() => setShowPassword(prev => !prev)}
+    >
+      {showPassword ? <FaEyeSlash /> : <FaEye />}
+    </span>
+
+  <div className="text-end">
+    <Link
+      to="/forgot-password"
+      className="text-decoration-none text-muted"
+      style={{ fontSize: '0.875rem' }}
+    >
+      Forgot password?
+    </Link>
+  </div>
+</div>
+
+
 
       <div className="mb-3">
-        <ReCAPTCHA
-          ref={recaptchaRef}
-          sitekey="6LdTZGwrAAAAAOs5n3cyHEAebDLsfRcyMd4-Fj67"
-          onChange={handleCaptchaChange}
-        />
+<div
+  className="captcha-wrapper"
+  style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: '1rem',
+    marginBottom: '1rem',
+    transform: window.innerWidth < 768 ? 'scale(0.82)' : 'scale(1)',
+    transformOrigin: 'center',
+    transition: 'transform 0.3s ease'
+  }}
+>
+  <ReCAPTCHA
+    ref={recaptchaRef}
+    sitekey="6LdTZGwrAAAAAOs5n3cyHEAebDLsfRcyMd4-Fj67"
+    onChange={handleCaptchaChange}
+  />
+</div>
+
       </div>
 
       {error && (
@@ -225,13 +263,17 @@ function Login() {
         </div>
       )}
 
-      <button type="submit" className="btn btn-primary w-100">
-        Sign In
-      </button>
+{!show2FA && (
+  <>
+    <button type="submit" className="btn btn-primary w-100">
+      Sign In
+    </button>
 
-      <p className="text-center mt-3">
-        Don’t have an account? <Link to="/register">Sign up</Link>
-      </p>
+    <p className="text-center mt-3">
+      Don’t have an account? <Link to="/register">Sign up</Link>
+    </p>
+  </>
+)}
 
       {/* 2FA UI */}
       {show2FA && (

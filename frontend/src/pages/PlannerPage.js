@@ -12,6 +12,7 @@ function PlannerPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Mobile version
   if (isMobile) {
     return (
       <div className="container-fluid px-3 py-3">
@@ -30,7 +31,15 @@ function PlannerPage() {
           </button>
         </div>
 
-        <div className="border rounded-4 p-2 shadow-sm" style={{ height: '82vh', overflowY: 'auto' }}>
+        <div
+          className="border rounded-4 p-2 shadow-sm"
+          style={{
+            height: '82vh',
+            overflowY: 'auto',
+            backgroundColor: 'var(--bg-color)',
+            color: 'var(--text-color)',
+          }}
+        >
           {activeTab === 'chat' ? <ChatPanel /> : <TripVisualizer />}
         </div>
       </div>
@@ -39,7 +48,7 @@ function PlannerPage() {
 
   // Desktop version
   return (
-    <div className="d-flex main-content">
+    <div className="d-flex main-content" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}>
       <div className="w-50 border-end p-3 overflow-auto">
         <ChatPanel />
       </div>

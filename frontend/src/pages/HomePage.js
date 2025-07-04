@@ -32,7 +32,6 @@ function HomePage() {
     }
   }, [location, navigate, setUser]);
 
-
   const username = user?.username;
 
   const mobileCards = [
@@ -48,7 +47,18 @@ function HomePage() {
   ];
 
   return (
-    <div className="container py-5 text-center" style={{ marginTop: '10vh' }}>
+    <div className="home-wrapper">
+    <div
+      className="container py-5 text-center"
+      style={{
+        marginTop: '10vh',
+        backgroundColor: 'var(--bg-color)',
+        color: 'var(--text-color)',
+        minHeight: '70vh',
+        borderRadius: '12px',
+        transition: 'all 0.3s ease',
+      }}
+    >
       <h1 className="display-5 fw-bold">Trip DVisor</h1>
       <h2 className="h4 fw-semibold mt-2">
         Welcome{username ? `, ${username}` : ''}!
@@ -67,7 +77,13 @@ function HomePage() {
               <div
                 key={idx}
                 className="d-flex flex-column align-items-center justify-content-center border rounded p-3 shadow-sm"
-                style={{ width: '100px', height: '100px' }}
+                style={{
+                  width: '100px',
+                  height: '100px',
+                  backgroundColor: 'var(--card-bg)',
+                  color: 'var(--text-color)',
+                  transition: 'all 0.3s ease',
+                }}
               >
                 <i className={`bi ${icon} text-primary fs-3 mb-2`}></i>
                 <div style={{ fontSize: '0.85rem' }}>{text}</div>
@@ -88,7 +104,14 @@ function HomePage() {
           <div className="row mt-5 justify-content-center">
             {desktopCards.map(({ icon, text }, idx) => (
               <div className="col-10 col-md-3 mb-3" key={idx}>
-                <div className="card shadow-sm p-3">
+                <div
+                  className="card shadow-sm p-3"
+                  style={{
+                    backgroundColor: 'var(--card-bg)',
+                    color: 'var(--text-color)',
+                    transition: 'all 0.3s ease',
+                  }}
+                >
                   <div className="text-primary mb-2">
                     <i className={`bi ${icon} fs-2`}></i>
                   </div>
@@ -99,6 +122,7 @@ function HomePage() {
           </div>
         </>
       )}
+    </div>
     </div>
   );
 }

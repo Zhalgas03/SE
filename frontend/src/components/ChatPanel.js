@@ -75,7 +75,7 @@ return (
   <div className="chat-container">
     {/* New Chat button */}
     <div className="px-1 px-sm-3 py-2 d-flex justify-content-end">
-      <button className="chat-btn d-flex align-items-center gap-1" onClick={clearChat} disabled={loading}>
+      <button className="chat-btn d-flex align-items-center gap-2" onClick={clearChat} disabled={loading}>
         <span className="icon-circle"><i className="bi bi-plus-lg"></i></span>
         <span className="d-none d-sm-inline">New Chat</span>
       </button>

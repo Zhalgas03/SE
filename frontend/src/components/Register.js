@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
-
+import { FaEye, FaEyeSlash } from 'react-icons/fa'; 
 function Register() {
   const [form, setForm] = useState({
     username: '',
@@ -13,7 +13,10 @@ function Register() {
   const [captchaToken, setCaptchaToken] = useState('');
   const recaptchaRef = useRef(null);
   const navigate = useNavigate();
-
+const [showPassword, setShowPassword] = useState(false);
+const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+const [passwordFocused, setPasswordFocused] = useState(false);
+const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError('');
@@ -81,11 +84,10 @@ function Register() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5001/api/auth/google';
-  };
+
 
   return (
+  
     <form
       onSubmit={handleSubmit}
       className="p-4"
@@ -95,22 +97,7 @@ function Register() {
         <img src="/logo.png" alt="Trip DVisor" style={{ height: '50px' }} />
       </div>
 
-      <div className="mb-3">
-        <button
-          type="button"
-          className="btn btn-outline-dark w-100 google-btn"
-          onClick={handleGoogleLogin}
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}
-        >
-          <img
-            src="https://developers.google.com/identity/images/g-logo.png"
-            alt="Google"
-            width="20"
-            height="20"
-          />
-          Sign up with Google
-        </button>
-      </div>
+
 <div className="mb-3 d-grid">
   <button
     type="button"
@@ -151,39 +138,83 @@ function Register() {
         />
       </div>
 
-      <div className="mb-1">
-        <label>Password</label>
-        <input
-          name="password"
-          type="password"
-          className="form-control"
-          onChange={handleChange}
-          required
-        />
-      </div>
+<div className="mb-1 position-relative">
+  <label>Password</label>
+  <input
+    name="password"
+    type={showPassword ? "text" : "password"}
+    className="form-control pe-5"
+    onChange={handleChange}
+    required
+  />
+<span
+  className="position-absolute"
+  style={{
+    top: '66%',                 
+    right: '12px',
+    transform: 'translateY(-50%)',
+    cursor: 'pointer',
+    color: '#888',
+    fontSize: '1.1rem',
+    lineHeight: '1'
+  }}
+  onClick={() => setShowPassword(prev => !prev)}
+>
+  {showPassword ? <FaEyeSlash /> : <FaEye />}
+</span>
+</div>
 
       <div className="mb-3 text-muted" style={{ fontSize: "0.85em" }}>
         Password must be at least 8 characters and include uppercase, lowercase letters, and a number
       </div>
 
-      <div className="mb-3">
-        <label>Confirm Password</label>
-        <input
-          name="confirmPassword"
-          type="password"
-          className="form-control"
-          onChange={handleChange}
-          required
-        />
-      </div>
+      <div className="mb-3 position-relative">
+  <label>Confirm Password</label>
+  <input
+    name="confirmPassword"
+    type={showConfirmPassword ? "text" : "password"}
+    className="form-control pe-5"
+    onChange={handleChange}
+    required
+  />
+<span
+  className="position-absolute"
+  style={{
+    top: '66%',                 
+    right: '12px',
+    transform: 'translateY(-50%)',
+    cursor: 'pointer',
+    color: '#888',
+    fontSize: '1.1rem',
+    lineHeight: '1'
+  }}
+  onClick={() => setShowPassword(prev => !prev)}
+>
+  {showPassword ? <FaEyeSlash /> : <FaEye />}
+</span>
 
-      <div className="mb-3">
-        <ReCAPTCHA
-          ref={recaptchaRef}
-          sitekey="6LdTZGwrAAAAAOs5n3cyHEAebDLsfRcyMd4-Fj67"
-          onChange={handleCaptchaChange}
-        />
-      </div>
+</div>
+
+
+<div
+  className="captcha-wrapper"
+  style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: '1rem',
+    marginBottom: '1rem',
+    transform: window.innerWidth < 768 ? 'scale(0.82)' : 'scale(1)',
+    transformOrigin: 'center',
+    transition: 'transform 0.3s ease'
+  }}
+>
+  <ReCAPTCHA
+    ref={recaptchaRef}
+    sitekey="6LdTZGwrAAAAAOs5n3cyHEAebDLsfRcyMd4-Fj67"
+    onChange={handleCaptchaChange}
+  />
+</div>
 
       {error && (
         <div
