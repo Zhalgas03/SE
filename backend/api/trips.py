@@ -173,3 +173,46 @@ def get_trips_with_pdf():
     conn.close()
 
     return jsonify({"success": True, "trips": trips}), 200
+
+
+@trips_bp.route("/<trip_id>", methods=["DELETE"])
+@jwt_required()
+def delete_trip(trip_id):
+    current_user = get_jwt_identity()
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    # Получаем путь к PDF только если поездка принадлежит текущему пользователю
+    cursor.execute(
+        """
+        SELECT pdf_file_path FROM trips 
+        WHERE id = %s AND creator_id = (
+            SELECT user_id FROM users WHERE username = %s
+        )
+        """,
+        (trip_id, current_user)
+    )
+    trip = cursor.fetchone()
+
+    if not trip:
+        return jsonify({"success": False, "error": "Trip not found or not allowed"}), 404
+
+    # Удаляем PDF-файл (если существует)
+    import os
+    pdf_path = trip["pdf_file_path"]
+    if pdf_path:
+        try:
+            os.remove(pdf_path)
+        except FileNotFoundError:
+            pass  # Файл не найден — не критично
+
+    # Удаляем поездку из БД
+    cursor.execute("DELETE FROM trips WHERE id = %s", (trip_id,))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({"success": True}), 200
+

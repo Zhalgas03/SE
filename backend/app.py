@@ -63,6 +63,9 @@ app.register_blueprint(notifications_bp)
 
 app.register_blueprint(stripe_bp)
 
+
+
+
 print("📍 Registered routes:")
 for rule in app.url_map.iter_rules():
     print(rule)
