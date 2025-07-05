@@ -94,3 +94,88 @@ def vote_on_trip(trip_id):
     except Exception as e:
         print("Vote error:", str(e))
         return jsonify(success=False, message="Server error"), 500
+
+
+@votes_bp.route("/guest/<int:trip_id>", methods=["POST"])
+def vote_guest(trip_id):
+    data = request.get_json()
+    value = data.get("value")
+    session_token = request.cookies.get("session_token")
+
+    if value not in [1, -1]:
+        return jsonify(success=False, message="Vote must be +1 or -1"), 400
+
+    if not session_token:
+        return jsonify(success=False, message="Missing session token"), 400
+
+    try:
+        conn = get_db_connection()
+        with conn:
+            with conn.cursor() as cur:
+                # Проверка правила
+                cur.execute("SELECT * FROM voting_rules WHERE trip_id = %s", (trip_id,))
+                rule = cur.fetchone()
+                if not rule:
+                    return jsonify(success=False, message="No voting rule for this trip"), 404
+
+                # Проверка повторного голосования
+                cur.execute("""
+                    SELECT * FROM votes
+                    WHERE trip_id = %s AND session_token = %s
+                """, (trip_id, session_token))
+                if cur.fetchone():
+                    return jsonify(success=False, message="You already voted"), 409
+
+                # Вставка голоса
+                cur.execute("""
+                    INSERT INTO votes (trip_id, value, session_token)
+                    VALUES (%s, %s, %s)
+                """, (trip_id, value, session_token))
+
+        return jsonify(success=True), 201
+
+    except Exception as e:
+        print("Guest vote error:", str(e))
+        return jsonify(success=False, message="Server error"), 500
+    
+    
+    
+from flask import request, jsonify
+from datetime import datetime
+from db import get_db_connection  # или твоя функция подключения
+
+@votes_bp.route("/submit", methods=["POST"])
+def submit_vote():
+    data = request.get_json()
+    trip_id = data.get("trip_id")
+    voter_type = data.get("voter_type")  # 'guest' или 'user'
+    voter_id = data.get("voter_id")
+    vote = data.get("vote")  # True или False
+
+    if not all([trip_id, voter_type, voter_id]) or vote is None:
+        return jsonify({"error": "Missing fields"}), 400
+
+    created_at = datetime.utcnow().isoformat()
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute(
+            """
+            INSERT INTO tripvotes (trip_id, voter_type, voter_id, vote, created_at)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (trip_id, voter_type, voter_id, vote, created_at)
+        )
+        conn.commit()
+        return jsonify({"message": "Vote submitted"}), 200
+
+    except Exception as e:
+        print("DB error:", e)
+        conn.rollback()
+        return jsonify({"error": "Database error"}), 500
+
+    finally:
+        cursor.close()
+        conn.close()

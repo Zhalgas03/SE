@@ -216,3 +216,19 @@ def delete_trip(trip_id):
 
     return jsonify({"success": True}), 200
 
+@trips_bp.route("/<trip_id>", methods=["GET"])
+def get_trip_by_id(trip_id):
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM trips WHERE trip_id = %s", (trip_id,))
+            trip = cur.fetchone()
+
+            if not trip:
+                return jsonify(success=False, message="Trip not found"), 404
+
+            return jsonify(success=True, trip=trip), 200
+
+    except Exception as e:
+        print("Get trip error:", str(e))
+        return jsonify(success=False, message="Server error"), 500
