@@ -8,7 +8,6 @@ import Register from './components/Register';
 import AuthLayout from './layouts/AuthLayout';
 import HomePage from './pages/HomePage';
 import PlannerPage from './pages/PlannerPage';
-import GoogleCallback from './components/GoogleCallback';
 
 import AccountPage from './pages/AccountPage';
 import LoginSuccess from './pages/LoginSuccess';
@@ -16,6 +15,11 @@ import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import Success from './pages/Success';
 import Cancel from './pages/Cancel';
+import Favorites from './pages/Favorites';
+
+
+import GuestVotePage from "./pages/GuestVotePage";
+
 function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -23,6 +27,26 @@ function AppContent() {
   const hideNavbarRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
   const hideNavbar = hideNavbarRoutes.includes(location.pathname);
 
+  useEffect(() => {
+  const token = localStorage.getItem("token");
+
+  const publicRoutes = [
+    '/',
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/vote'
+  ];
+
+  const isPublic = publicRoutes.some(path =>
+    location.pathname === path || location.pathname.startsWith(path + '/')
+  );
+
+  if (!token && !isPublic) {
+    navigate('/login');
+  }
+}, [location.pathname, navigate]);
 
   return (
     <>
@@ -37,13 +61,15 @@ function AppContent() {
 
   <Route path="/" element={<HomePage />} />
   <Route path="/planner" element={<PlannerPage />} />
-  <Route path="/google/callback" element={<GoogleCallback />} />
+
 
   <Route path="/account" element={<AccountPage />} />
   <Route path="/login-success" element={<LoginSuccess />} />
-
+  <Route path="/favorites" element={<Favorites />} />
     <Route path="/success" element={<Success />} />
   <Route path="/cancel" element={<Cancel />} />
+  
+<Route path="/vote/:tripId" element={<GuestVotePage />} />
 </Routes>
 
     </>
