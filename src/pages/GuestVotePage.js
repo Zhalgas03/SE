@@ -36,19 +36,26 @@ function GuestVotePage() {
 
     init();
   }, [tripId]);
-
+function getSessionToken() {
+  const match = document.cookie.match(/session_token=([^;]+)/);
+  return match ? match[1] : null;
+}
   // 2. Отправка голоса
   const sendVote = async (value) => {
     if (hasVoted) return;
 
     try {
-      const res = await fetch(`http://localhost:5001/api/votes/guest/${tripId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ value }),
-      });
-
+      const res = await fetch("http://localhost:5001/api/votes/submit", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  credentials: "include",
+  body: JSON.stringify({
+    trip_id: parseInt(tripId),
+    voter_type: "guest",
+    voter_id: getSessionToken(), // см. ниже
+    vote: value === 1, // true / false
+  }),
+});
       const data = await res.json();
 
       if (data.success) {

@@ -88,32 +88,31 @@ function Favorites() {
   >
     🗑 Delete
   </button>
-  <button
-    className="btn btn-outline-secondary btn-sm"
-    onClick={async () => {
-      try {
-        const res = await fetch(`http://localhost:5001/api/votes/start/${trip.id}`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json"
-          }
-        });
-        const data = await res.json();
-        if (data.success && data.link) {
-          await navigator.clipboard.writeText(data.link);
-          alert("Voting link copied:\n" + data.link);
-        } else {
-          alert("Failed to generate voting link.");
-        }
-      } catch (err) {
-        console.error("Voting link error:", err);
-        alert("Error generating link.");
-      }
-    }}
-  >
-    🗳 Voting
-  </button>
+<button
+  className="btn btn-outline-secondary btn-sm"
+  onClick={async () => {
+    try {
+      await fetch(`http://localhost:5001/api/voting-rules/enable`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ trip_id: trip.id })
+      });
+
+      const guestLink = `http://localhost:3000/guest-vote/${trip.id}`;
+      await navigator.clipboard.writeText(guestLink);
+      alert("Voting link copied:\n" + guestLink);
+    } catch (err) {
+      console.error("Voting error:", err);
+      alert("Failed to create voting link.");
+    }
+  }}
+>
+  🗳 Voting
+</button>
+
 </div>
 
             </div>
@@ -146,34 +145,33 @@ function Favorites() {
             >
               🗑 Delete
             </button>
-            <button
-              className="btn btn-outline-secondary btn-sm"
-              onClick={async () => {
-                const trip = trips.find(t => `http://localhost:5001/${t.pdf_file_path}` === selectedPdf);
-                if (!trip) return;
-                try {
-                  const res = await fetch(`http://localhost:5001/api/votes/start/${trip.id}`, {
-                    method: "POST",
-                    headers: {
-                      Authorization: `Bearer ${localStorage.getItem("token")}`,
-                      "Content-Type": "application/json"
-                    }
-                  });
-                  const data = await res.json();
-                  if (data.success && data.link) {
-                    await navigator.clipboard.writeText(data.link);
-                    alert("Voting link copied:\n" + data.link);
-                  } else {
-                    alert("Failed to generate voting link.");
-                  }
-                } catch (err) {
-                  console.error("Voting link error:", err);
-                  alert("Error generating link.");
-                }
-              }}
-            >
-              🗳 Voting
-            </button>
+<button
+  className="btn btn-outline-secondary btn-sm"
+  onClick={async () => {
+    const trip = trips.find(t => `http://localhost:5001/${t.pdf_file_path}` === selectedPdf);
+    if (!trip) return;
+    try {
+      await fetch(`http://localhost:5001/api/voting-rules/enable`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ trip_id: trip.id })
+      });
+
+      const guestLink = `http://localhost:3000/guest-vote/${trip.id}`;
+      await navigator.clipboard.writeText(guestLink);
+      alert("Voting link copied:\n" + guestLink);
+    } catch (err) {
+      console.error("Voting error:", err);
+      alert("Failed to create voting link.");
+    }
+  }}
+>
+  🗳 Voting
+</button>
+
             <button
               type="button"
               className="btn-close"
