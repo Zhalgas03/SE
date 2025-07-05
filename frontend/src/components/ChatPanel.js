@@ -1,16 +1,69 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './ChatPanel.css';
+import { useTrip } from '../context/TripContext';
 
 const STORAGE_KEY = 'plannerChatMessages';
 const INITIAL_MESSAGES = [
   {
+    id:1,
     role: 'assistant',
     content: "\u{1F44B} Hello! I'm your smart travel planner. Let's start step-by-step!\nWhere would you like to go?"
   }
 ];
 
+function parseTripSummary(text) {
+  const destinationMatch = text.match(/\*\*Destination:\*\*\s*(.+)/i);
+  const datesMatch = text.match(/\*\*Dates:\*\*\s*(.+)/i);
+  const activityMatch = text.match(/\*\*Activity:\*\*\s*(.+)/i);
+  const styleMatch = text.match(/\*\*Travel Style:\*\*\s*(.+)/i);
+  const budgetMatch = text.match(/\*\*Budget:\*\*\s*(.+)/i);
+  const groupMatch = text.match(/\*\*Travel Group:\*\*\s*(.+)/i);
+  const originMatch = text.match(/\*\*Departure City:\*\*\s*(.+)/i);
+
+  const overviewMatch = text.match(/#### Overview\s*([\s\S]*?)####/i);
+  const highlightsMatch = text.match(/#### Highlights\s*([\s\S]*?)####/i);
+  const itineraryMatch = text.match(/#### Itinerary\s*([\s\S]*?)####/i);
+  const transferMatch = text.match(/#### Return Trip\s*([\s\S]*?)$/i);
+
+  const highlights = highlightsMatch
+    ? highlightsMatch[1].split(/[-*]\s+/).filter(Boolean).map(h => h.trim())
+    : [];
+
+  const itineraryLines = itineraryMatch
+    ? itineraryMatch[1].split(/[-*]\s+/).filter(Boolean)
+    : [];
+
+  const itinerary = itineraryLines.map((line, i) => ({
+    title: `Day ${i + 1}`,
+    description: line.trim()
+  }));
+
+  const parsed = {
+    destination: destinationMatch?.[1]?.trim() || null,
+    travel_dates: datesMatch?.[1]?.trim() || null,
+    activities: activityMatch?.[1]?.trim() || null,
+    style: styleMatch?.[1]?.trim() || null,
+    budget: budgetMatch?.[1]?.trim() || null,
+    group: groupMatch?.[1]?.trim() || null,
+    origin: originMatch?.[1]?.trim() || null,
+    overview: overviewMatch?.[1]?.trim() || "",
+    highlights: highlights,
+    itinerary_intro: null,
+    itinerary: itinerary,
+    transfers: transferMatch?.[1]?.trim()
+      ? [{ route: "Return Trip", details: transferMatch[1].trim() }]
+      : []
+  };
+
+  return parsed;
+}
+
+
+  
+
 export default function ChatPanel() {
+  const {updateTripSummary } = useTrip();
   const [messages, setMessages] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : INITIAL_MESSAGES;
@@ -48,28 +101,71 @@ export default function ChatPanel() {
 
   const handleSend = async () => {
     if (!input.trim()) return;
-    const newMessages = [...messages, { role: 'user', content: input.trim() }];
+  
+    const userMessage = {
+      id: Date.now() + Math.random(), // уникальный ключ
+      role: 'user',
+      content: input.trim()
+    };
+  
+    const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInput('');
     setLoading(true);
-
+  
     try {
       const res = await fetch('http://localhost:5001/api/perplexity-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: input.trim() })
       });
-
+  
       const data = await res.json();
       const reply = data.reply;
-      setMessages([...newMessages, { role: 'assistant', content: reply }]);
+
+      console.log("AI reply:", reply);
+      const parsed = parseTripSummary(reply);
+      if (parsed?.destination) {
+        console.log("📦 Parsed summary:", parsed);
+        updateTripSummary(parsed);
+      }
+      
+  
+      const assistantMessage = {
+        id: Date.now() + Math.random(), // тоже уникальный ключ
+        role: 'assistant',
+        content: reply
+      };
+  
+      setMessages([...newMessages, assistantMessage]);
+  
+      // Попытка распарсить JSON
+      const jsonStart = reply.indexOf('{');
+      const jsonEnd = reply.lastIndexOf('}');
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        const jsonText = reply.slice(jsonStart, jsonEnd + 1);
+        try {
+          const parsed = JSON.parse(jsonText);
+          updateTripSummary(parsed);
+        } catch (e) {
+          console.warn("⚠️ Could not parse trip summary JSON:", e);
+        }
+      }
+  
     } catch (err) {
       console.error(err);
-      setMessages([...newMessages, { role: 'assistant', content: '❌ Error: could not get reply.' }]);
+      const errorMessage = {
+        id: Date.now() + Math.random(),
+        role: 'assistant',
+        content: '❌ Error: could not get reply.'
+      };
+      setMessages([...newMessages, errorMessage]);
+  
     } finally {
       setLoading(false);
     }
   };
+  
 
 return (
   <div className="chat-container">
@@ -83,9 +179,9 @@ return (
 
     {/* Chat messages area */}
     <div className="flex-grow-1 overflow-auto chat-wrapper px-1 px-sm-3" style={{ paddingBottom: '0.5rem' }}>
-      {messages.map((msg, idx) => (
+      {messages.map((msg) => (
         <motion.div
-          key={idx}
+          key={msg.id}
           className={`d-flex ${msg.role === 'user' ? 'justify-content-end' : 'justify-content-start'} mb-2`}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

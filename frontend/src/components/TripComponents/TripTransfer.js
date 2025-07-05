@@ -1,21 +1,26 @@
 import React from 'react';
 import { Card } from 'react-bootstrap';
 
-function TripTransfer() {
+function TripTransfer({ summary }) {
+  const transfers = Array.isArray(summary?.transfers) && summary.transfers.length > 0
+  ? summary.transfers
+  : [];
+
   return (
     <Card className="mb-4 shadow-sm">
       <Card.Body>
         <h5 className="fw-bold mb-3">Transfer & Transportation</h5>
 
-        <div className="mb-4">
-          <div className="fw-semibold">🚗 Milan, Italy → Rome, Italy</div>
-          <div className="text-muted small ms-4">Wed, Jul 2 • 5h 34m • Non-stop</div>
-        </div>
-
-        <div>
-          <div className="fw-semibold">🚗 Rome, Italy → Milan, Italy</div>
-          <div className="text-muted small ms-4">Sat, Jul 5 • 5h 21m • Non-stop</div>
-        </div>
+        {transfers.length > 0 ? (
+          transfers.map((tr, i) => (
+            <div key={i} className="mb-4">
+              <div className="fw-semibold">{tr.route}</div>
+              <div className="text-muted small ms-4">{tr.details}</div>
+            </div>
+          ))
+        ) : (
+          <p className="text-muted">No transfer info provided.</p>
+        )}
 
         <div className="mt-3" style={{ height: '250px', borderRadius: '10px', background: '#f0f0f0' }}>
           <div className="d-flex justify-content-center align-items-center h-100 text-muted">
