@@ -15,6 +15,7 @@
     "jspdf": "^3.0.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.511.0",
+    "pdfjs-dist": "^2.16.105",
     "react": "^19.1.0",
     "react-bootstrap-validation": "^0.1.11",
     "react-dom": "^19.1.0",

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-
+import PdfViewer from "../components/PdfViewer";
 function Favorites() {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPdf, setSelectedPdf] = useState(null);
+  
   useEffect(() => {
     const fetchTrips = async () => {
       try {
@@ -180,14 +181,19 @@ function Favorites() {
             ></button>
           </div>
         </div>
-        <div className="modal-body" style={{ height: "80vh" }}>
-          <iframe
-            src={selectedPdf}
-            width="100%"
-            height="100%"
-            frameBorder="0"
-          ></iframe>
-        </div>
+<div
+  className="modal-body d-flex justify-content-center"
+  style={{
+    maxHeight: "80vh",
+    overflowY: "auto",
+    padding: "1rem",
+    backgroundColor: "#f8f9fa",
+
+  
+  }}
+>
+  <PdfViewer url={selectedPdf} />
+</div>
       </div>
     </div>
   </div>
