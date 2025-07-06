@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
-
+import PdfViewer from "../components/PdfViewer";
+import VotingInterface from "../components/VotingInterface";
 function Favorites() {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [selectedPdf, setSelectedPdf] = useState(null);
+  
   useEffect(() => {
     const fetchTrips = async () => {
       try {
-        const res = await fetch("http://localhost:5001/api/trips/favorites", {
+        const res = await fetch("/api/trips/favorites", {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`
           }
@@ -34,7 +36,7 @@ function Favorites() {
     if (!window.confirm("Are you sure you want to delete this trip?")) return;
 
     try {
-      const res = await fetch(`http://localhost:5001/api/trips/${tripId}`, {
+      const res = await fetch(`/api/trips/${tripId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`
@@ -74,28 +76,89 @@ function Favorites() {
               <p className="text-muted small">
                 {trip.date_start?.split('T')[0]} → {trip.date_end?.split('T')[0]}
               </p>
-              <div className="d-flex justify-content-between align-items-center">
-                <a
-                  className="btn btn-outline-primary btn-sm"
-                  href={`http://localhost:5001/${trip.pdf_file_path}`}
-                  download
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  📥 Overview
-                </a>
-                <button
-                  className="btn btn-outline-danger btn-sm ms-2"
-                  onClick={() => handleDelete(trip.id)}
-                >
-                  🗑 Delete
-                </button>
-              </div>
+<div className="d-flex flex-wrap gap-2 mt-3">
+  <button
+    className="btn btn-outline-primary btn-sm"
+    onClick={() => setSelectedPdf(`/${trip.pdf_file_path}`)}
+  >
+    📄 View
+  </button>
+  <button
+    className="btn btn-outline-danger btn-sm"
+    onClick={() => handleDelete(trip.id)}
+  >
+    🗑 Delete
+  </button>
+</div>
+<div className="mt-3">
+  <VotingInterface tripId={trip.id} />
+</div>
+
             </div>
           </div>
         ))}
       </div>
+
+{selectedPdf && (
+  <div
+    className="modal d-block bg-dark bg-opacity-75"
+    tabIndex="-1"
+    onClick={() => setSelectedPdf(null)}
+    style={{ zIndex: 1050 }}
+  >
+    <div
+      className="modal-dialog modal-xl modal-dialog-centered"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="modal-content">
+        <div className="modal-header justify-content-between">
+          <h5 className="modal-title">Trip Overview</h5>
+          <div className="d-flex gap-2">
+            <button
+              className="btn btn-outline-danger btn-sm"
+              onClick={() => {
+                const trip = trips.find(t => `/${t.pdf_file_path}` === selectedPdf);
+                if (trip) handleDelete(trip.id);
+                setSelectedPdf(null);
+              }}
+            >
+              🗑 Delete
+            </button>
+
+            <button
+              type="button"
+              className="btn-close"
+              onClick={() => setSelectedPdf(null)}
+            ></button>
+          </div>
+        </div>
+<div
+  className="modal-body d-flex justify-content-center"
+  style={{
+    maxHeight: "80vh",
+    overflowY: "auto",
+    padding: "1rem",
+    backgroundColor: "#f8f9fa",
+  }}
+>
+  <div className="w-100">
+    <PdfViewer url={selectedPdf} />
+    <div className="mt-3">
+      {(() => {
+        const trip = trips.find(t => `/${t.pdf_file_path}` === selectedPdf);
+        return trip ? <VotingInterface tripId={trip.id} /> : null;
+      })()}
     </div>
+  </div>
+</div>
+      </div>
+    </div>
+  </div>
+)}
+
+
+    </div>
+    
   );
 }
 
