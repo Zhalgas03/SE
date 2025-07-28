@@ -16,7 +16,7 @@ def get_notifications():
     try:
         conn = get_db_connection()
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT user_id FROM users WHERE username = %s", (username,))
+            cur.execute("SELECT id FROM users WHERE username = %s", (username,))
             user = cur.fetchone()
             if not user:
                 return jsonify(success=False, message="User not found"), 404
@@ -26,7 +26,7 @@ def get_notifications():
                 FROM notifications
                 WHERE user_id = %s
                 ORDER BY created_at DESC
-            """, (user["user_id"],))
+            """, (user["id"],))
             notifications = cur.fetchall()
             return jsonify(success=True, notifications=notifications), 200
 
@@ -50,7 +50,7 @@ def create_notification_route():
     try:
         conn = get_db_connection()
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT user_id FROM users WHERE username = %s", (username,))
+            cur.execute("SELECT id FROM users WHERE username = %s", (username,))
             user = cur.fetchone()
             if not user:
                 return jsonify(success=False, message="User not found"), 404
@@ -58,7 +58,7 @@ def create_notification_route():
             cur.execute("""
                 INSERT INTO notifications (user_id, title, message)
                 VALUES (%s, %s, %s)
-            """, (user["user_id"], title, message))
+            """, (user["id"], title, message))
             conn.commit()
             return jsonify(success=True, message="Notification created"), 201
 
@@ -77,7 +77,7 @@ def mark_notification_as_read(notification_id):
         conn = get_db_connection()
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             # Получаем user_id
-            cur.execute("SELECT user_id FROM users WHERE username = %s", (username,))
+            cur.execute("SELECT id FROM users WHERE username = %s", (username,))
             user = cur.fetchone()
             if not user:
                 return jsonify(success=False, message="User not found"), 404
@@ -87,7 +87,7 @@ def mark_notification_as_read(notification_id):
                 UPDATE notifications
                 SET is_read = TRUE
                 WHERE id = %s AND user_id = %s
-            """, (notification_id, user["user_id"]))
+            """, (notification_id, user["id"]))
 
             if cur.rowcount == 0:
                 return jsonify(success=False, message="Notification not found or not yours"), 404
@@ -110,7 +110,7 @@ def delete_notification(notification_id):
         conn = get_db_connection()
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             # Получаем user_id
-            cur.execute("SELECT user_id FROM users WHERE username = %s", (username,))
+            cur.execute("SELECT id FROM users WHERE username = %s", (username,))
             user = cur.fetchone()
             if not user:
                 return jsonify(success=False, message="User not found"), 404
@@ -119,7 +119,7 @@ def delete_notification(notification_id):
             cur.execute("""
                 DELETE FROM notifications
                 WHERE id = %s AND user_id = %s
-            """, (notification_id, user["user_id"]))
+            """, (notification_id, user["id"]))
 
             if cur.rowcount == 0:
                 return jsonify(success=False, message="Notification not found or not yours"), 404

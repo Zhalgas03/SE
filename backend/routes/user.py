@@ -19,7 +19,7 @@ def get_profile():
     conn = get_db_connection()
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute("""
-            SELECT username, email, is_2fa_enabled 
+            SELECT username, email, is_2fa_enabled, is_subscribed, role
             FROM users 
             WHERE username = %s
         """, (username,))
@@ -27,8 +27,7 @@ def get_profile():
         if not record:
             return jsonify(success=False, message="User not found"), 404
 
-        user = UserDict.from_db_row(record)
-        return jsonify(success=True, user=user.__dict__), 200
+        return jsonify(success=True, user=record), 200
 
 
 @user_bp.route("/profile", methods=["PUT"])
@@ -81,13 +80,13 @@ def toggle_2fa():
                 WHERE username = %s
             """, (enable_2fa, username))
             conn.commit()
-            # получаем user_id по username
-            cur.execute("SELECT user_id FROM users WHERE username = %s", (username,))
+            # получаем id по username
+            cur.execute("SELECT id FROM users WHERE username = %s", (username,))
             user = cur.fetchone()
             if user:
                 title = "2FA Enabled" if enable_2fa else "2FA Disabled"
                 message = "You have enabled two-factor authentication." if enable_2fa else "You have disabled two-factor authentication."
-                create_notification(user["user_id"], title, message)
+                create_notification(user["id"], title, message)
                 send_email_notification(
                     username=username,
                     subject=title,
