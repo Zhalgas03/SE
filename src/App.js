@@ -25,9 +25,10 @@ import LoginSuccess from './pages/LoginSuccess';
 import Favorites from './pages/Favorites';
 import Success from './pages/Success';
 import Cancel from './pages/Cancel';
+import GuestVotePage from './pages/GuestVotePage';
 
 import AuthLayout from './layouts/AuthLayout';
-import GuestVotePage from "./pages/GuestVotePage";
+
 function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -69,7 +70,7 @@ function AppContent() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
         </Route>
-<Route path="/guest-vote/:tripId" element={<GuestVotePage />} />
+
         <Route path="/" element={<HomePage />} />
         <Route path="/planner" element={<PlannerPage />} />
         <Route path="/google/callback" element={<GoogleCallback />} />
@@ -78,6 +79,7 @@ function AppContent() {
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/success" element={<Success />} />
         <Route path="/cancel" element={<Cancel />} />
+        <Route path="/vote/:tripId" element={<GuestVotePage />} />
       </Routes>
     </>
   );

@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
 import * as pdfjsLib from "pdfjs-dist";
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+// Use the official CDN for the worker in pdfjs-dist v5+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://unpkg.com/pdfjs-dist@" + pdfjsLib.version + "/build/pdf.worker.min.js";
 
 function PdfViewer({ url }) {
   const canvasRef = useRef();

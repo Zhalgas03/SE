@@ -54,8 +54,12 @@ function Navbar() {
            style={{ backgroundColor: 'var(--header-bg)' }}>
         {/* Logo */}
         <Link className="navbar-brand fw-bold d-flex align-items-center" to="/">
-        <img
-  src={isDark ? '/logo_alt.png' : '/logo.png'}
+<img
+  src={
+    user?.is_subscribed
+      ? (isDark ? '/premium_alt.png' : '/premium.png')
+      : (isDark ? '/logo_alt.png' : '/logo.png')
+  }
   alt="Trip DVisor Logo"
   height="32"
   className="me-2"

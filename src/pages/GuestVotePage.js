@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 
 function GuestVotePage() {
   const { tripId } = useParams();
+  
+  // Log the tripId to console for debugging
+  console.log("🎯 GuestVotePage: tripId =", tripId);
+  
   const [tripTitle, setTripTitle] = useState("");
   const [hasVoted, setHasVoted] = useState(false);
   const [voteStatus, setVoteStatus] = useState(null); // null | "success" | "error"
@@ -13,12 +17,12 @@ function GuestVotePage() {
     const init = async () => {
       try {
         if (!document.cookie.includes("session_token")) {
-          await fetch("http://localhost:5001/api/session/init", {
+          await fetch("/api/session/init", {
             credentials: "include",
           });
         }
 
-        const res = await fetch(`http://localhost:5001/api/trips/${tripId}`);
+        const res = await fetch(`/api/trips/${tripId}`);
         const data = await res.json();
 
         if (data.success && data.trip) {
@@ -36,26 +40,19 @@ function GuestVotePage() {
 
     init();
   }, [tripId]);
-function getSessionToken() {
-  const match = document.cookie.match(/session_token=([^;]+)/);
-  return match ? match[1] : null;
-}
+
   // 2. Отправка голоса
   const sendVote = async (value) => {
     if (hasVoted) return;
 
     try {
-      const res = await fetch("http://localhost:5001/api/votes/submit", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  credentials: "include",
-  body: JSON.stringify({
-    trip_id: parseInt(tripId),
-    voter_type: "guest",
-    voter_id: getSessionToken(), // см. ниже
-    vote: value === 1, // true / false
-  }),
-});
+      const res = await fetch(`/api/votes/guest/${tripId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ value }),
+      });
+
       const data = await res.json();
 
       if (data.success) {

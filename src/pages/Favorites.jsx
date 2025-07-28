@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import PdfViewer from "../components/PdfViewer";
+import VotingInterface from "../components/VotingInterface";
 function Favorites() {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -8,7 +9,7 @@ function Favorites() {
   useEffect(() => {
     const fetchTrips = async () => {
       try {
-        const res = await fetch("http://localhost:5001/api/trips/favorites", {
+        const res = await fetch("/api/trips/favorites", {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`
           }
@@ -35,7 +36,7 @@ function Favorites() {
     if (!window.confirm("Are you sure you want to delete this trip?")) return;
 
     try {
-      const res = await fetch(`http://localhost:5001/api/trips/${tripId}`, {
+      const res = await fetch(`/api/trips/${tripId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`
@@ -78,7 +79,7 @@ function Favorites() {
 <div className="d-flex flex-wrap gap-2 mt-3">
   <button
     className="btn btn-outline-primary btn-sm"
-    onClick={() => setSelectedPdf(`http://localhost:5001/${trip.pdf_file_path}`)}
+    onClick={() => setSelectedPdf(`/${trip.pdf_file_path}`)}
   >
     📄 View
   </button>
@@ -88,31 +89,9 @@ function Favorites() {
   >
     🗑 Delete
   </button>
-<button
-  className="btn btn-outline-secondary btn-sm"
-  onClick={async () => {
-    try {
-      await fetch(`http://localhost:5001/api/voting-rules/enable`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ trip_id: trip.id })
-      });
-
-      const guestLink = `http://localhost:3000/guest-vote/${trip.id}`;
-      await navigator.clipboard.writeText(guestLink);
-      alert("Voting link copied:\n" + guestLink);
-    } catch (err) {
-      console.error("Voting error:", err);
-      alert("Failed to create voting link.");
-    }
-  }}
->
-  🗳 Voting
-</button>
-
+</div>
+<div className="mt-3">
+  <VotingInterface tripId={trip.id} />
 </div>
 
             </div>
@@ -138,39 +117,13 @@ function Favorites() {
             <button
               className="btn btn-outline-danger btn-sm"
               onClick={() => {
-                const trip = trips.find(t => `http://localhost:5001/${t.pdf_file_path}` === selectedPdf);
+                const trip = trips.find(t => `/${t.pdf_file_path}` === selectedPdf);
                 if (trip) handleDelete(trip.id);
                 setSelectedPdf(null);
               }}
             >
               🗑 Delete
             </button>
-<button
-  className="btn btn-outline-secondary btn-sm"
-  onClick={async () => {
-    const trip = trips.find(t => `http://localhost:5001/${t.pdf_file_path}` === selectedPdf);
-    if (!trip) return;
-    try {
-      await fetch(`http://localhost:5001/api/voting-rules/enable`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ trip_id: trip.id })
-      });
-
-      const guestLink = `http://localhost:3000/guest-vote/${trip.id}`;
-      await navigator.clipboard.writeText(guestLink);
-      alert("Voting link copied:\n" + guestLink);
-    } catch (err) {
-      console.error("Voting error:", err);
-      alert("Failed to create voting link.");
-    }
-  }}
->
-  🗳 Voting
-</button>
 
             <button
               type="button"
@@ -186,11 +139,17 @@ function Favorites() {
     overflowY: "auto",
     padding: "1rem",
     backgroundColor: "#f8f9fa",
-
-  
   }}
 >
-  <PdfViewer url={selectedPdf} />
+  <div className="w-100">
+    <PdfViewer url={selectedPdf} />
+    <div className="mt-3">
+      {(() => {
+        const trip = trips.find(t => `/${t.pdf_file_path}` === selectedPdf);
+        return trip ? <VotingInterface tripId={trip.id} /> : null;
+      })()}
+    </div>
+  </div>
 </div>
       </div>
     </div>
