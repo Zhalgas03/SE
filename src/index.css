@@ -276,3 +276,24 @@ body.dark-theme {
   --btn-bg-hover: #64b5f6;
   --btn-text: #000000;
 }
+
+
+:root {
+  --bg: #ffffff;
+  --card-bg: #ffffff;
+  --text-color: #111111;
+  --muted-text: #555555;
+  --btn-bg: #0d6efd;
+  --btn-text: #ffffff;
+  --error-color: #dc3545;
+}
+
+body.dark-theme {
+  --bg: #121212;
+  --card-bg: #1e1e1e;
+  --text-color: #ffffff;
+  --muted-text: #cccccc;
+  --btn-bg: #0d6efd;
+  --btn-text: #ffffff;
+  --error-color: #ff6b6b;
+}

@@ -168,13 +168,17 @@ function AccountProfile({
         </span>
       </div>
 
-      <button
-        onClick={handleChangePassword}
-        className="btn btn-outline-dark w-100"
-        disabled={isChangingPassword}
-      >
-        {isChangingPassword ? 'Changing...' : 'Change Password'}
-      </button>
+     <button
+  className="w-100 rounded-2 fw-semibold py-2"
+  style={{
+    border: '2px solid var(--bs-border-color)',
+    backgroundColor: 'transparent',
+    color: 'inherit'
+  }}
+>
+  Change Password
+</button>
+
     </div>
   );
 }

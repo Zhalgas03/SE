@@ -1,24 +1,41 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import axios from 'axios';
+import Confetti from 'react-confetti';
+import { useWindowSize } from '@react-hook/window-size';
 
 function Success() {
   const { setUser } = useUser();
+  const [width, height] = useWindowSize();
+  const [showConfetti, setShowConfetti] = useState(true);
+
+  useEffect(() => {
+    // Автоматическое исчезновение конфетти через 3 секунды
+    const timer = setTimeout(() => {
+      setShowConfetti(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem('token');
       try {
         const res = await axios.get('http://localhost:5001/api/user/profile', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
           withCredentials: true,
         });
 
         if (res.data.success && res.data.user) {
-          setUser({ username: res.data.user.username, is_subscribed: res.data.user.is_subscribed }, token);
+          setUser(
+            {
+              username: res.data.user.username,
+              is_subscribed: res.data.user.is_subscribed,
+            },
+            token
+          );
         }
       } catch (err) {
         console.error('❌ Failed to fetch user after payment success', err);
@@ -29,24 +46,27 @@ function Success() {
   }, [setUser]);
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-        paddingTop: '12vh',
-        paddingBottom: '4vh',
-        minHeight: 'auto',
-        backgroundColor: 'var(--bg)',
-        color: 'var(--text-color)',
-      }}
-    >
+    <>
+      {showConfetti && (
+        <Confetti
+          width={width}
+          height={height}
+          numberOfPieces={180}
+          gravity={0.3}
+          recycle={false}
+        />
+      )}
       <div
         style={{
-          maxWidth: '500px',
-          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '90vh',
+          backgroundColor: 'var(--bg)',
+          color: 'var(--text-color)',
           textAlign: 'center',
-          padding: '1rem',
+          padding: '2rem',
         }}
       >
         <h1
@@ -57,13 +77,13 @@ function Success() {
             color: 'var(--success-color, #22c55e)',
           }}
         >
-          ✅ Payment Successful
+          Payment Successful
         </h1>
         <p
           style={{
             fontSize: '1.1rem',
-            marginBottom: '1.5rem',
-            color: 'var(--muted-text)',
+            marginBottom: '2rem',
+            color: 'var(--text-color)',
           }}
         >
           Thank you for subscribing to TripDVisor Premium!
@@ -85,7 +105,7 @@ function Success() {
           </button>
         </Link>
       </div>
-    </div>
+    </>
   );
 }
 
