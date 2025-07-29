@@ -88,30 +88,25 @@ def register():
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
-
-    # Verify captcha
+    # Проверка капчи
     def verify_captcha(token: str) -> bool:
         secret = Config.RECAPTCHA_SECRET_KEY
-        payload = {
-            'secret': secret,
-            'response': token
-        }
+        payload = {'secret': secret, 'response': token}
         response = requests.post("https://www.google.com/recaptcha/api/siteverify", data=payload)
         result = response.json()
         return result.get("success", False)
     
-    
-    # Get data from request
+    # Получение данных
     data = request.get_json()
     email = data.get('email', '').strip()
     password_input = data.get('password', '')
-
     captcha_token = data.get('captchaToken')
+
     if not captcha_token or not verify_captcha(captcha_token):
-        return make_response(jsonify(success=False, message="CAPTCHA verification failed"), 400)
+        return jsonify(success=False, message="CAPTCHA verification failed"), 400
 
     if not all([email, password_input]):
-        return make_response(jsonify(success=False, message="Email and password are required."), 400)
+        return jsonify(success=False, message="Email and password are required."), 400
 
     try:
         conn = get_db_connection()
@@ -123,33 +118,30 @@ def login():
                 is_2fa_enabled = user.get('is_2fa_enabled', False)
 
                 if is_2fa_enabled:
-                    # 2FA включена → отправляем код
+                    username = user['username']
+
+                    # Генерируем код и сохраняем в session
                     code = generate_2fa_code()
-                    expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
-                    send_email_notification(email, "2FA Verification Code", f"Your verification code is: {code}")
+                    session['2fa_code'] = code
+                    session['2fa_email'] = email
+                    session['2fa_expiry'] = (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat()
 
-                    cur.execute("""
-                        INSERT INTO email_2fa_codes (email, code, expires_at)
-                        VALUES (%s, %s, %s)
-                        ON CONFLICT (email)
-                        DO UPDATE SET code = EXCLUDED.code, expires_at = EXCLUDED.expires_at
-                    """, (email, code, expires_at))
-                    conn.commit()
+                    # Отправляем код на email
+                    send_email_notification(username, "2FA Verification Code", f"Your verification code is: {code}")
 
-                    return make_response(jsonify(success=True, message="Verification code sent to your email."), 200)
+                    return jsonify(success=True, message="Verification code sent to your email."), 200
 
                 else:
-                    # 2FA выключена → сразу JWT
+                    # Без 2FA сразу JWT
                     access_token = create_access_token(identity=username)
-                    return make_response(jsonify(success=True, token=access_token, username=username), 200)
+                    return jsonify(success=True, token=access_token, username=username), 200
 
     except Exception as e:
         print("Login error:", str(e))
-        return make_response(jsonify(success=False, message="Server error"), 500)
+        return jsonify(success=False, message="Server error"), 500
 
-    # Explicit fallback return for type checker
-    return make_response(jsonify(success=False, message="Invalid email or password"), 401)
-    
+    return jsonify(success=False, message="Invalid email or password"), 401
+
         
 @auth_bp.route("/verify-2fa", methods=["POST"])
 def verify_2fa():
@@ -160,39 +152,38 @@ def verify_2fa():
     if not email or not code_input:
         return jsonify(success=False, message="Email and code are required."), 400
 
-    try:
-        conn = get_db_connection()
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT code, expires_at FROM email_2fa_codes WHERE email = %s", (email,))
-            record = cur.fetchone()
+    # Проверка email совпадает ли с сессией
+    if email != session.get('2fa_email'):
+        return jsonify(success=False, message="Invalid email or session expired"), 400
 
-            if not record:
-                return jsonify(success=False, message="No verification code found."), 404
+    stored_code = session.get('2fa_code')
+    expiry_str = session.get('2fa_expiry')
 
-            if datetime.utcnow() > record["expires_at"]:
-                return jsonify(success=False, message="Verification code expired."), 400
+    if not stored_code or not expiry_str:
+        return jsonify(success=False, message="No verification code or session expired"), 400
 
-            if code_input != record["code"]:
-                return jsonify(success=False, message="Invalid verification code."), 401
+    expiry = datetime.fromisoformat(expiry_str)
+    if datetime.now(timezone.utc) > expiry:
+        return jsonify(success=False, message="Verification code expired."), 400
 
-            # Удалить использованный код
-            cur.execute("DELETE FROM email_2fa_codes WHERE email = %s", (email,))
-            conn.commit()
+    if code_input != stored_code:
+        return jsonify(success=False, message="Invalid verification code."), 401
 
-            # Получить username для JWT
-            cur.execute("SELECT username FROM users WHERE email = %s", (email,))
-            user = cur.fetchone()
-            if not user:
-                return jsonify(success=False, message="User not found."), 404
+    # Очистка сессии после успешной проверки
+    session.pop('2fa_code', None)
+    session.pop('2fa_email', None)
+    session.pop('2fa_expiry', None)
 
-            # Выдать токен
-            access_token = create_access_token(identity=user["username"])
-            return jsonify(success=True, token=access_token, username=user["username"]), 200
+    # Генерация токена
+    conn = get_db_connection()
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute("SELECT username FROM users WHERE email = %s", (email,))
+        user = cur.fetchone()
+        if not user:
+            return jsonify(success=False, message="User not found."), 404
 
-    except Exception as e:
-        print("2FA verification error:", str(e))
-        return jsonify(success=False, message="Server error"), 500
-
+    access_token = create_access_token(identity=user["username"])
+    return jsonify(success=True, token=access_token, username=user["username"]), 200
 
 
 

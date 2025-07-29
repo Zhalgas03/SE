@@ -6,6 +6,7 @@ export const TripProvider = ({ children }) => {
   const [tripSummary, setTripSummary] = useState(null);
 
   const updateTripSummary = (summary) => {
+    console.log("Coordinates in TripContext:", summary.coordinates);
     if (JSON.stringify(summary) === JSON.stringify(tripSummary)) return;
     setTripSummary(summary);
   };
@@ -26,3 +27,5 @@ export const TripProvider = ({ children }) => {
 
 
 export const useTrip = () => useContext(TripContext);
+
+
