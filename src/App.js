@@ -16,7 +16,6 @@ import Login from './components/Login';
 import Register from './components/Register';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
-import GoogleCallback from './components/GoogleCallback';
 
 import HomePage from './pages/HomePage';
 import PlannerPage from './pages/PlannerPage';
@@ -73,7 +72,6 @@ function AppContent() {
 
         <Route path="/" element={<HomePage />} />
         <Route path="/planner" element={<PlannerPage />} />
-        <Route path="/google/callback" element={<GoogleCallback />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/login-success" element={<LoginSuccess />} />
         <Route path="/favorites" element={<Favorites />} />

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import TripHeader from './TripComponents/TripHeader';
-import TripOverview from './TripComponents/TripOverview';
-import TripHighlights from './TripComponents/TripHighlights';
-import TripItinerary from './TripComponents/TripItinerary';
-import TripTransfer from './TripComponents/TripTransfer';
+import { useState } from 'react';
 import { useTrip } from '../context/TripContext';
 import { generateTripPDF, savePDFToServer } from '../utils/pdfGenerator';
+import TripHeader from './TripComponents/TripHeader';
+import TripHighlights from './TripComponents/TripHighlights';
+import TripItinerary from './TripComponents/TripItinerary';
+import TripOverview from './TripComponents/TripOverview';
+import TripTransfer from './TripComponents/TripTransfer';
 
 function TripVisualizer() {
   const { tripSummary } = useTrip();
@@ -16,16 +16,18 @@ function TripVisualizer() {
   const twoDaysLater = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
     .toISOString()
     .split('T')[0];
-if (!tripSummary) {
-  return (
-    <div className="d-flex justify-content-center align-items-center h-100 text-muted p-4">
-      <div className="text-center">
-        <h5 className="fw-semibold mb-2">🧭 Trip Plan will appear here</h5>
-        <p className="mb-0">Start planning your trip using the chat on the left!</p>
+
+  if (!tripSummary) {
+    return (
+      <div className="d-flex justify-content-center align-items-center h-100 text-muted p-4">
+        <div className="text-center">
+          <h5 className="fw-semibold mb-2">🧭 Trip Plan will appear here</h5>
+          <p className="mb-0">Start planning your trip using the chat on the left!</p>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
+
   function generateTripName(summary) {
     if (!summary || !summary.destination || !summary.travel_dates) return "My Trip";
 
@@ -41,6 +43,34 @@ if (!tripSummary) {
     return `${daysText} ${styleText} to ${destination}`;
   }
 
+  const handleAddToFavorites = async () => {
+    if (!tripSummary) {
+      alert("❌ No trip data available.");
+      return;
+    }
+
+    setIsGeneratingPDF(true);
+
+    try {
+      const tripName = generateTripName(tripSummary);
+      const pdf = generateTripPDF(tripSummary, tripName);
+      const serverResponse = await savePDFToServer(pdf, tripSummary, tripName);
+
+      if (serverResponse.success) {
+        setSavedSuccessfully(true);
+        alert("✅ Trip added to favorites successfully!");
+      } else {
+        alert("❌ Failed to save trip: " + serverResponse.message);
+      }
+
+    } catch (error) {
+      console.error("Add to favorites error:", error);
+      alert("❌ Error saving trip: " + error.message);
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   const handleSaveToPDF = async () => {
     if (!tripSummary) {
       alert("❌ No trip data available to generate PDF.");
@@ -50,13 +80,8 @@ if (!tripSummary) {
     setIsGeneratingPDF(true);
 
     try {
-      // Generate trip name
       const tripName = generateTripName(tripSummary);
-      
-      // Generate PDF from actual trip data
       const pdf = generateTripPDF(tripSummary, tripName);
-      
-      // Save to server and download locally
       const serverResponse = await savePDFToServer(pdf, tripSummary, tripName);
       
       if (serverResponse.success) {
@@ -77,9 +102,12 @@ if (!tripSummary) {
 
   return (
     <div className="trip-visualizer-container px-4 py-4 rounded-4">
-      <div className="text-end mb-3">
+      <div className="text-end mb-3 d-flex gap-2 justify-content-end">
+        <button className="btn btn-outline-primary" onClick={handleAddToFavorites}>
+          {savedSuccessfully ? "✅ Added to Favourites" : "Add to Favourites"}
+        </button>
         <button className="btn btn-outline-secondary" onClick={handleSaveToPDF}>
-          {savedSuccessfully ? "✅ Trip saved" : "Save to PDF"}
+          Download PDF
         </button>
       </div>
 
