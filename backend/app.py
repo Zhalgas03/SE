@@ -37,6 +37,11 @@ CORS(app,
      max_age=3600)
 
 app.config.from_object(Config)
+
+# Настройки cookie для сессий
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.config['SESSION_COOKIE_SECURE'] = False  # для локальной разработки, ставь True на продакшн
+
 jwt = JWTManager(app)
 
 

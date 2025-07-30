@@ -100,7 +100,9 @@ def audit_schema():
             'approval_threshold': 'numeric',
             'min_votes_required': 'integer',
             'duration_hours': 'integer',
-            'rule_type': 'character varying'
+            'rule_type': 'character varying',
+            'created_at': 'timestamp without time zone',
+            'expires_at': 'timestamp without time zone'
         }
         
         for col in voting_rules_cols:
@@ -180,6 +182,34 @@ def fix_schema_issues():
         if not cur.fetchone():
             log("   Adding rule_type column to voting_rules...")
             cur.execute("ALTER TABLE voting_rules ADD COLUMN rule_type VARCHAR(20) DEFAULT 'majority'")
+        
+        # Check if created_at column exists
+        cur.execute("""
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name = 'voting_rules' AND column_name = 'created_at'
+        """)
+        if not cur.fetchone():
+            log("   Adding created_at column to voting_rules...")
+            cur.execute("ALTER TABLE voting_rules ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+        
+        # Check if expires_at column exists
+        cur.execute("""
+            SELECT column_name FROM information_schema.columns 
+            WHERE table_name = 'voting_rules' AND column_name = 'expires_at'
+        """)
+        if not cur.fetchone():
+            log("   Adding expires_at column to voting_rules...")
+            cur.execute("ALTER TABLE voting_rules ADD COLUMN expires_at TIMESTAMP")
+        
+        # Update existing voting rules with default expiration if expires_at is NULL
+        cur.execute("""
+            UPDATE voting_rules 
+            SET expires_at = created_at + INTERVAL '24 hours'
+            WHERE expires_at IS NULL
+        """)
+        updated_count = cur.rowcount
+        if updated_count > 0:
+            log(f"   Updated {updated_count} existing voting rules with default expiration")
         
         # 2. Ensure trips table has status column
         log("2️⃣ Ensuring trips table has status column...")

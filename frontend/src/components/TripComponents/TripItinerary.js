@@ -4,9 +4,10 @@ import MapPreview from '../MapPreview';
 
 function TripItinerary({ summary, isGeneratingPDF }) {
   const itinerary = Array.isArray(summary?.itinerary) && summary.itinerary.length > 0
-  ? summary.itinerary
-  : [];
-  const intro = summary?.itinerary_intro || 'No itinerary available.';
+    ? summary.itinerary
+    : [];
+  const intro = summary?.itinerary_intro;
+  const hasCoordinates = summary?.coordinates && summary.coordinates.length > 0;
 
   return (
     <Card className="mb-4 shadow-sm" style={{ overflow: 'visible' }}>
@@ -15,9 +16,10 @@ function TripItinerary({ summary, isGeneratingPDF }) {
 
         {intro && <p>{intro}</p>}
 
-        {!isGeneratingPDF && (
+        {/* Карта маршрута — показываем только если координаты есть и не в PDF */}
+        {!isGeneratingPDF && hasCoordinates && (
           <div className="rounded-3" style={{ height: '260px', marginBottom: '2.5rem' }}>
-            <MapPreview />
+            <MapPreview coordinates={summary.coordinates} />
           </div>
         )}
 

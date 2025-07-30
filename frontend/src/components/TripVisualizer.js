@@ -6,6 +6,7 @@ import TripItinerary from './TripComponents/TripItinerary';
 import TripTransfer from './TripComponents/TripTransfer';
 import { useTrip } from '../context/TripContext';
 import { generateTripPDF, savePDFToServer } from '../utils/pdfGenerator';
+import MapPreview from './MapPreview';
 
 function TripVisualizer() {
   const { tripSummary } = useTrip();
@@ -16,16 +17,18 @@ function TripVisualizer() {
   const twoDaysLater = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
     .toISOString()
     .split('T')[0];
-if (!tripSummary) {
-  return (
-    <div className="d-flex justify-content-center align-items-center h-100 text-muted p-4">
-      <div className="text-center">
-        <h5 className="fw-semibold mb-2">🧭 Trip Plan will appear here</h5>
-        <p className="mb-0">Start planning your trip using the chat on the left!</p>
+
+  if (!tripSummary) {
+    return (
+      <div className="d-flex justify-content-center align-items-center h-100 text-muted p-4">
+        <div className="text-center">
+          <h5 className="fw-semibold mb-2">🧭 Trip Plan will appear here</h5>
+          <p className="mb-0">Start planning your trip using the chat on the left!</p>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
+
   function generateTripName(summary) {
     if (!summary || !summary.destination || !summary.travel_dates) return "My Trip";
 
@@ -50,13 +53,8 @@ if (!tripSummary) {
     setIsGeneratingPDF(true);
 
     try {
-      // Generate trip name
       const tripName = generateTripName(tripSummary);
-      
-      // Generate PDF from actual trip data
       const pdf = generateTripPDF(tripSummary, tripName);
-      
-      // Save to server and download locally
       const serverResponse = await savePDFToServer(pdf, tripSummary, tripName);
       
       if (serverResponse.success) {
@@ -89,6 +87,9 @@ if (!tripSummary) {
         <TripHighlights summary={tripSummary} />
         <TripItinerary summary={tripSummary} isGeneratingPDF={isGeneratingPDF} />
         <TripTransfer summary={tripSummary} />
+
+        {/* Карта: передаем координаты или пустой массив */}
+        {/*<MapPreview coordinates={tripSummary.coordinates || []} />*/}
       </div>
     </div>
   );

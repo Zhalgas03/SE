@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from db import get_db_connection
 from psycopg2.extras import RealDictCursor
 from utils.email_notify import send_email_notification
+from datetime import datetime, timedelta
 import re
 import uuid
 import logging
@@ -154,14 +155,36 @@ def get_vote_status(trip_id):
 
                 print(f"✅ Trip {trip_id} found: {trip['name']}")
 
+                # Check if voting session exists and is active
+                cur.execute("""
+                    SELECT *, 
+                           CASE WHEN expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP 
+                           THEN 'active' ELSE 'expired' END as status
+                    FROM voting_rules 
+                    WHERE trip_id = %s
+                """, (trip_id,))
+                rule = cur.fetchone()
+                
+                voting_status = {
+                    "hasVoted": False,
+                    "voteValue": None,
+                    "votingActive": False,
+                    "expiresAt": None
+                }
+                
+                if rule:
+                    voting_status["votingActive"] = rule["status"] == "active"
+                    voting_status["expiresAt"] = rule["expires_at"].isoformat() if rule["expires_at"] else None
+                
                 # Check if user has voted
                 cur.execute("SELECT value FROM votes WHERE trip_id = %s AND user_id = %s", (trip_id, user_id))
                 vote_row = cur.fetchone()
                 
                 if vote_row:
-                    return jsonify(success=True, hasVoted=True, voteValue=vote_row["value"]), 200
-                else:
-                    return jsonify(success=True, hasVoted=False, voteValue=None), 200
+                    voting_status["hasVoted"] = True
+                    voting_status["voteValue"] = vote_row["value"]
+                
+                return jsonify(success=True, **voting_status), 200
 
     except Exception as e:
         print(f"❌ Vote status check error: {str(e)}")
@@ -226,16 +249,21 @@ def vote_on_trip(trip_id):
 
                 print(f"✅ Trip {trip_id} found: {trip['name']}")
 
-                # Check if voting rule exists, create default if not
-                cur.execute("SELECT * FROM voting_rules WHERE trip_id = %s", (trip_id,))
+                # Check if voting rule exists and is not expired
+                cur.execute("""
+                    SELECT *, 
+                           CASE WHEN expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP 
+                           THEN 'active' ELSE 'expired' END as status
+                    FROM voting_rules 
+                    WHERE trip_id = %s
+                """, (trip_id,))
                 rule = cur.fetchone()
+                
                 if not rule:
-                    # Create default voting rule if none exists
-                    cur.execute("""
-                        INSERT INTO voting_rules (trip_id, approval_threshold, min_votes_required, duration_hours, rule_type)
-                        VALUES (%s, %s, %s, %s, %s)
-                    """, (trip_id, 0.5, 1, 24, "majority"))
-                    rule = {"approval_threshold": 0.5, "min_votes_required": 1}
+                    return jsonify(success=False, message="No voting session found for this trip"), 404
+                
+                if rule["status"] == "expired":
+                    return jsonify(success=False, message="Voting session has expired"), 410
 
                 # Check if user has already voted
                 cur.execute("SELECT * FROM votes WHERE trip_id = %s AND user_id = %s", (trip_id, user_id))
@@ -278,23 +306,35 @@ def vote_on_trip(trip_id):
                     if new_status:
                         cur.execute("UPDATE trips SET status = %s WHERE id = %s", (new_status, trip_id))
 
-                        # Notify all voters
-                        cur.execute("""
-                            SELECT u.username FROM votes v
-                            JOIN users u ON v.user_id = u.id
-                            WHERE v.trip_id = %s
-                        """, (trip_id,))
-                        voters = cur.fetchall()
+                        # Import the voting expiration service for detailed results
+                        from services.voting_expiration_service import send_voting_result_notifications
+                        
+                        # Send detailed voting result notifications to all participants
+                        try:
+                            if send_voting_result_notifications(trip_id):
+                                print(f"✅ Detailed voting results sent to all participants for trip {trip_id}")
+                            else:
+                                print(f"❌ Failed to send detailed voting results for trip {trip_id}")
+                        except Exception as e:
+                            print(f"❌ Error sending detailed voting results: {str(e)}")
+                            
+                            # Fallback to simple notification if detailed service fails
+                            cur.execute("""
+                                SELECT u.username FROM votes v
+                                JOIN users u ON v.user_id = u.id
+                                WHERE v.trip_id = %s
+                            """, (trip_id,))
+                            voters = cur.fetchall()
 
-                        for voter in voters:
-                            try:
-                                send_email_notification(
-                                    username=voter["username"],
-                                    subject=f"Trip Voting Result: {new_status.upper()}",
-                                    message=f"The voting for Trip #{trip_id} is over. Final status: {new_status.upper()}."
-                                )
-                            except Exception as e:
-                                print(f"❌ Email notification error for {voter['username']}: {str(e)}")
+                            for voter in voters:
+                                try:
+                                    send_email_notification(
+                                        username=voter["username"],
+                                        subject=f"Trip Voting Result: {new_status.upper()}",
+                                        message=f"The voting for Trip #{trip_id} is over. Final status: {new_status.upper()}."
+                                    )
+                                except Exception as e:
+                                    print(f"❌ Email notification error for {voter['username']}: {str(e)}")
 
         return jsonify(success=True, message="Vote submitted"), 201
 
@@ -345,7 +385,7 @@ def guest_vote(trip_id):
 @votes_bp.route("/start/<trip_id>", methods=["POST"])
 @jwt_required()
 def start_voting_session(trip_id):
-    """Generate a voting link for sharing"""
+    """Start a voting session with optional duration"""
     print(f"🎯 HIT: POST /api/votes/start/{trip_id}")
     print(f"🎯 FULL PATH: {request.path}")
     print(f"🎯 METHOD: {request.method}")
@@ -356,8 +396,31 @@ def start_voting_session(trip_id):
         print(f"❌ Invalid trip_id format: {trip_id}")
         return jsonify(success=False, message=error_msg), 400
     
+    # Validate request data
+    if not request.is_json:
+        print("❌ Request must be JSON")
+        return jsonify(success=False, message="Request must be JSON"), 400
+    
+    data = request.get_json()
+    if not data:
+        print("❌ No JSON data provided")
+        return jsonify(success=False, message="No data provided"), 400
+    
+    # Get duration parameters
+    duration_minutes = data.get("duration_minutes", 1440)  # Default 24 hours (1440 minutes)
+    
+    # Validate duration (5 minutes to 24 hours)
+    try:
+        duration_minutes = int(duration_minutes)
+        if duration_minutes < 5:
+            return jsonify(success=False, message="Voting duration must be at least 5 minutes"), 400
+        if duration_minutes > 1440:  # 24 hours
+            return jsonify(success=False, message="Voting duration cannot exceed 24 hours"), 400
+    except (ValueError, TypeError):
+        return jsonify(success=False, message="Duration must be a valid number"), 400
+    
     username = get_jwt_identity()
-    print(f"🔗 Generating voting link for trip {trip_id} by user {username}")
+    print(f"🔗 Starting voting session for trip {trip_id} by user {username} with duration {duration_minutes} minutes")
     
     try:
         conn = get_db_connection()
@@ -379,11 +442,37 @@ def start_voting_session(trip_id):
                     print(f"❌ Trip {trip_id} not found or user {username} doesn't own it")
                     return jsonify(success=False, message="Trip not found or you don't have permission"), 404
 
+                # Check if voting session already exists
+                cur.execute("SELECT * FROM voting_rules WHERE trip_id = %s", (trip_id,))
+                existing_rule = cur.fetchone()
+                
+                if existing_rule:
+                    # Update existing voting rule with new expiration
+                    cur.execute("""
+                        UPDATE voting_rules 
+                        SET expires_at = CURRENT_TIMESTAMP + INTERVAL '%s minutes',
+                            created_at = CURRENT_TIMESTAMP
+                        WHERE trip_id = %s
+                    """, (duration_minutes, trip_id))
+                    print(f"✅ Updated existing voting session for trip {trip_id}")
+                else:
+                    # Create new voting rule
+                    cur.execute("""
+                        INSERT INTO voting_rules (trip_id, approval_threshold, min_votes_required, duration_hours, rule_type, created_at, expires_at)
+                        VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '%s minutes')
+                    """, (trip_id, 0.5, 1, duration_minutes // 60, "majority", duration_minutes))
+                    print(f"✅ Created new voting session for trip {trip_id}")
+
                 # Generate voting link
                 voting_link = f"http://localhost:3000/vote/{trip_id}"
                 
-                return jsonify(success=True, link=voting_link), 200
+                return jsonify(
+                    success=True, 
+                    link=voting_link,
+                    duration_minutes=duration_minutes,
+                    expires_at=(datetime.now() + timedelta(minutes=duration_minutes)).isoformat()
+                ), 200
 
     except Exception as e:
-        print(f"❌ Voting link generation error: {str(e)}")
+        print(f"❌ Voting session start error: {str(e)}")
         return jsonify(success=False, message="Server error"), 500
