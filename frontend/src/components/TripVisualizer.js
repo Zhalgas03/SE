@@ -88,8 +88,6 @@ function TripVisualizer() {
         <TripItinerary summary={tripSummary} isGeneratingPDF={isGeneratingPDF} />
         <TripTransfer summary={tripSummary} />
 
-        {/* Карта: передаем координаты или пустой массив */}
-        {/*<MapPreview coordinates={tripSummary.coordinates || []} />*/}
       </div>
     </div>
   );

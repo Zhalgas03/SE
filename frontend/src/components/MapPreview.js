@@ -5,15 +5,17 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 const MAPBOX_TOKEN = "pk.eyJ1IjoidGFpcmFraGF5ZXYiLCJhIjoiY21kbmg5djRpMXNqaTJrczViaTF0c256dCJ9.RUMP-cv_z2UcpzHq_0IraA";
 
 export default function MapPreview({ coordinates }) {
-  const validCoords = coordinates?.filter(p => p.lat && p.lng) || [];
+  const validCoords = coordinates?.filter(p => p.lat && p.lng && !p.isFallback) || [];
+
 
   // Центр карты
   const center = useMemo(() => {
-    if (validCoords.length === 0) return { lat: 50.1109, lng: 8.6821 };
-    const avgLat = validCoords.reduce((sum, p) => sum + p.lat, 0) / validCoords.length;
-    const avgLng = validCoords.reduce((sum, p) => sum + p.lng, 0) / validCoords.length;
+    const coordsForCenter = coordinates?.filter(p => p.lat && p.lng && !p.isFallback) || [];
+    if (coordsForCenter.length === 0) return { lat: 50.1109, lng: 8.6821 };
+    const avgLat = coordsForCenter.reduce((sum, p) => sum + p.lat, 0) / coordsForCenter.length;
+    const avgLng = coordsForCenter.reduce((sum, p) => sum + p.lng, 0) / coordsForCenter.length;
     return { lat: avgLat, lng: avgLng };
-  }, [coordinates]); // пересчитываем только при изменении координат
+  }, [coordinates]);
 
   const [viewState, setViewState] = useState({
     latitude: center.lat,
