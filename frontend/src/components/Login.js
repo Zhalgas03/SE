@@ -112,8 +112,7 @@ useEffect(() => {
       const res = await fetch("http://localhost:5001/api/verify-2fa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.email, code }),
-        credentials: "include"
+        body: JSON.stringify({ email: form.email, code })
       });
 
       const data = await res.json();

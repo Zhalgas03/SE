@@ -396,17 +396,12 @@ def start_voting_session(trip_id):
         print(f"❌ Invalid trip_id format: {trip_id}")
         return jsonify(success=False, message=error_msg), 400
     
-    # Validate request data
-    if not request.is_json:
-        print("❌ Request must be JSON")
-        return jsonify(success=False, message="Request must be JSON"), 400
+    # Validate request data - make it more flexible
+    data = {}
+    if request.is_json:
+        data = request.get_json() or {}
     
-    data = request.get_json()
-    if not data:
-        print("❌ No JSON data provided")
-        return jsonify(success=False, message="No data provided"), 400
-    
-    # Get duration parameters
+    # Get duration parameters with better validation
     duration_minutes = data.get("duration_minutes", 1440)  # Default 24 hours (1440 minutes)
     
     # Validate duration (5 minutes to 24 hours)
@@ -421,6 +416,7 @@ def start_voting_session(trip_id):
     
     username = get_jwt_identity()
     print(f"🔗 Starting voting session for trip {trip_id} by user {username} with duration {duration_minutes} minutes")
+    print(f"🔗 Request data: {data}")
     
     try:
         conn = get_db_connection()
@@ -431,16 +427,19 @@ def start_voting_session(trip_id):
                 user_row = cur.fetchone()
                 if not user_row:
                     print(f"❌ User not found: {username}")
-                    return jsonify(success=False, message="User not found"), 404
+                    return jsonify(success=False, message="User not found. Please log in again."), 404
 
                 user_id = user_row["id"]
+                print(f"✅ User ID found: {user_id}")
 
                 # Check if trip exists and user owns it
                 cur.execute("SELECT * FROM trips WHERE id = %s AND creator_id = %s", (trip_id, user_id))
                 trip = cur.fetchone()
                 if not trip:
                     print(f"❌ Trip {trip_id} not found or user {username} doesn't own it")
-                    return jsonify(success=False, message="Trip not found or you don't have permission"), 404
+                    return jsonify(success=False, message="Trip not found or you don't have permission to create voting for this trip"), 404
+                
+                print(f"✅ Trip found: {trip['name'] if trip else 'Unknown'}")
 
                 # Check if voting session already exists
                 cur.execute("SELECT * FROM voting_rules WHERE trip_id = %s", (trip_id,))

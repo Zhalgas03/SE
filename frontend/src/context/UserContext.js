@@ -5,17 +5,18 @@ const UserContext = createContext();
 export const UserProvider = ({ children }) => {
   const storedUser = JSON.parse(localStorage.getItem('user'));
   const storedToken = localStorage.getItem('token');
+
   const [user, setUser] = useState(storedUser || null);
   const [token, setToken] = useState(storedToken || null);
 
-const saveUser = (userData, tokenData) => {
-  if (userData && tokenData) {
-    localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem('token', tokenData);
-    setUser(userData);
-    setToken(tokenData);
-  }
-};
+  const saveUser = (userData, tokenData) => {
+    if (userData && tokenData) {
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('token', tokenData);
+      setUser(userData);
+      setToken(tokenData);
+    }
+  };
 
   const clearUser = () => {
     localStorage.clear();
@@ -38,7 +39,12 @@ const saveUser = (userData, tokenData) => {
       if (res.status === 401 || !data.success) {
         clearUser();
       } else if (data.user) {
-        setUser({ username: data.user.username });
+        const userObj = {
+          username: data.user.username,
+          is_subscribed: data.user.is_subscribed || false
+        };
+        localStorage.setItem('user', JSON.stringify(userObj));
+        setUser(userObj);
         setToken(freshToken);
       }
     } catch (err) {

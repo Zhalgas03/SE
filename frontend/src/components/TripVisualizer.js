@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
-import TripHeader from './TripComponents/TripHeader';
-import TripOverview from './TripComponents/TripOverview';
-import TripHighlights from './TripComponents/TripHighlights';
-import TripItinerary from './TripComponents/TripItinerary';
-import TripTransfer from './TripComponents/TripTransfer';
+import { useState } from 'react';
 import { useTrip } from '../context/TripContext';
 import { generateTripPDF, savePDFToServer } from '../utils/pdfGenerator';
-import MapPreview from './MapPreview';
+import TripHeader from './TripComponents/TripHeader';
+import TripHighlights from './TripComponents/TripHighlights';
+import TripItinerary from './TripComponents/TripItinerary';
+import TripOverview from './TripComponents/TripOverview';
+import TripTransfer from './TripComponents/TripTransfer';
 
 function TripVisualizer() {
-  const { tripSummary } = useTrip();
+  const { tripSummary, clearSavedTrip } = useTrip();
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [savedSuccessfully, setSavedSuccessfully] = useState(false);
 
@@ -44,6 +43,59 @@ function TripVisualizer() {
     return `${daysText} ${styleText} to ${destination}`;
   }
 
+  const handleAddToFavorites = async () => {
+    if (!tripSummary) {
+      alert("❌ No trip data available.");
+      return;
+    }
+
+    setIsGeneratingPDF(true);
+
+    try {
+      console.log('🔧 TripVisualizer: Starting add to favorites process...');
+      const tripName = generateTripName(tripSummary);
+      console.log('🔧 TripVisualizer: Generated trip name:', tripName);
+      
+      const pdf = generateTripPDF(tripSummary, tripName);
+      console.log('🔧 TripVisualizer: PDF generated successfully');
+      
+      const serverResponse = await savePDFToServer(pdf, tripSummary, tripName);
+      console.log('🔧 TripVisualizer: Server response received:', serverResponse);
+
+      if (serverResponse.success) {
+        setSavedSuccessfully(true);
+        alert("✅ Trip added to favorites successfully!");
+      } else {
+        const errorMsg = serverResponse.message || 'Unknown server error';
+        console.error('❌ TripVisualizer: Server returned error:', errorMsg);
+        alert("❌ Failed to save trip: " + errorMsg);
+      }
+
+    } catch (error) {
+      console.error("❌ TripVisualizer: Add to favorites error:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      
+      // Provide user-friendly error messages
+      let userMessage = "❌ Error saving trip: ";
+      if (error.message.includes("Authentication token not found")) {
+        userMessage += "Please log in again to save your trip.";
+      } else if (error.message.includes("Server returned HTML error page")) {
+        userMessage += "Server connection issue. Please try again later.";
+      } else if (error.message.includes("Failed to fetch")) {
+        userMessage += "Network error. Please check your connection and try again.";
+      } else {
+        userMessage += error.message;
+      }
+      
+      alert(userMessage);
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   const handleSaveToPDF = async () => {
     if (!tripSummary) {
       alert("❌ No trip data available to generate PDF.");
@@ -53,31 +105,69 @@ function TripVisualizer() {
     setIsGeneratingPDF(true);
 
     try {
+      console.log('🔧 TripVisualizer: Starting PDF download process...');
       const tripName = generateTripName(tripSummary);
+      console.log('🔧 TripVisualizer: Generated trip name:', tripName);
+      
       const pdf = generateTripPDF(tripSummary, tripName);
+      console.log('🔧 TripVisualizer: PDF generated successfully');
+      
       const serverResponse = await savePDFToServer(pdf, tripSummary, tripName);
+      console.log('🔧 TripVisualizer: Server response received:', serverResponse);
       
       if (serverResponse.success) {
         setSavedSuccessfully(true);
         pdf.save(`${tripName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
         alert("✅ Trip saved and downloaded successfully!");
       } else {
-        alert("❌ Failed to save trip: " + serverResponse.message);
+        const errorMsg = serverResponse.message || 'Unknown server error';
+        console.error('❌ TripVisualizer: Server returned error:', errorMsg);
+        alert("❌ Failed to save trip: " + errorMsg);
       }
 
     } catch (error) {
-      console.error("PDF generation error:", error);
-      alert("❌ Error generating PDF: " + error.message);
+      console.error("❌ TripVisualizer: PDF generation error:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      
+      // Provide user-friendly error messages
+      let userMessage = "❌ Error generating PDF: ";
+      if (error.message.includes("Authentication token not found")) {
+        userMessage += "Please log in again to download your trip.";
+      } else if (error.message.includes("Server returned HTML error page")) {
+        userMessage += "Server connection issue. Please try again later.";
+      } else if (error.message.includes("Failed to fetch")) {
+        userMessage += "Network error. Please check your connection and try again.";
+      } else {
+        userMessage += error.message;
+      }
+      
+      alert(userMessage);
     } finally {
       setIsGeneratingPDF(false);
     }
   };
 
+  const handleClearTrip = () => {
+    if (window.confirm("Are you sure you want to clear this trip? This action cannot be undone.")) {
+      clearSavedTrip();
+      setSavedSuccessfully(false);
+    }
+  };
+
   return (
     <div className="trip-visualizer-container px-4 py-4 rounded-4">
-      <div className="text-end mb-3">
+      <div className="text-end mb-3 d-flex gap-2 justify-content-end">
+        <button className="btn btn-outline-primary" onClick={handleAddToFavorites}>
+          {savedSuccessfully ? "✅ Added to Favourites" : "Add to Favourites"}
+        </button>
         <button className="btn btn-outline-secondary" onClick={handleSaveToPDF}>
-          {savedSuccessfully ? "✅ Trip saved" : "Save to PDF"}
+          Download PDF
+        </button>
+        <button className="btn btn-outline-danger" onClick={handleClearTrip}>
+          Clear Trip
         </button>
       </div>
 
@@ -87,9 +177,6 @@ function TripVisualizer() {
         <TripHighlights summary={tripSummary} />
         <TripItinerary summary={tripSummary} isGeneratingPDF={isGeneratingPDF} />
         <TripTransfer summary={tripSummary} />
-
-        {/* Карта: передаем координаты или пустой массив */}
-        {/*<MapPreview coordinates={tripSummary.coordinates || []} />*/}
       </div>
     </div>
   );

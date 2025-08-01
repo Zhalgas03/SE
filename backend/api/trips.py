@@ -93,103 +93,94 @@ def get_trips():
         print("Trip list error:", str(e))
         return jsonify(success=False, message="Server error"), 500
 
-@trips_bp.route("/save-with-pdf", methods=["POST"])
+@trips_bp.route('/save-with-pdf', methods=['POST'])
 @jwt_required()
-def save_trip_with_pdf():
+def save_with_pdf():
     user = get_jwt_identity()
-    print(f"🔍 Save trip with PDF request from user: {user}")
-    
-    # Validate request format
-    if not request.is_json:
-        print("❌ Request is not JSON")
-        return jsonify(success=False, message="Request must be JSON"), 400
-    
     data = request.get_json()
+    print(f"Received trip data with PDF from user {user}:", data)
+    
+    # Validate required fields
     if not data:
-        print("❌ No JSON data provided")
         return jsonify(success=False, message="No data provided"), 400
-
+    
     name = data.get("name")
     date_start = data.get("date_start")
     date_end = data.get("date_end")
     pdf_base64 = data.get("pdf_base64")
-
-    print(f"📋 Request data: name={name}, date_start={date_start}, date_end={date_end}, pdf_base64_length={len(pdf_base64) if pdf_base64 else 0}")
-
-    if not all([name, pdf_base64]):
-        print("❌ Missing required fields")
-        return jsonify(success=False, message="Missing required fields: name and pdf_base64"), 400
-
+    
+    if not name:
+        return jsonify(success=False, message="Trip name is required"), 400
+    
     try:
-        # Получаем ID пользователя
-        print(f"🔍 Getting user ID for username: {user}")
         conn = get_db_connection()
         with conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Get user ID from username
                 cur.execute("SELECT id FROM users WHERE username = %s", (user,))
                 user_row = cur.fetchone()
                 if not user_row:
-                    print(f"❌ User not found: {user}")
                     return jsonify(success=False, message="User not found"), 404
-                user_id = user_row["id"]
-                print(f"✅ User ID found: {user_id}")
-
-        # 📁 Генерируем путь и создаём папку (если нужно)
-        folder = os.path.join(current_app.root_path, "static", "trips")
-        print(f"📁 Creating folder: {folder}")
-        os.makedirs(folder, exist_ok=True)
-
-        filename = f"{user}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
-        abs_path = os.path.join(folder, filename)
-        rel_path = f"static/trips/{filename}"
-        print(f"📄 File paths: abs={abs_path}, rel={rel_path}")
-
-        # 💾 Сохраняем файл
-        print("💾 Saving PDF file...")
-        try:
-            # Handle base64 data with or without data URL prefix
-            if pdf_base64.startswith('data:application/pdf;base64,'):
-                pdf_data = pdf_base64.split(',')[1]
-            else:
-                pdf_data = pdf_base64
-            
-            pdf_bytes = base64.b64decode(pdf_data)
-            print(f"📊 PDF size: {len(pdf_bytes)} bytes")
-            
-            with open(abs_path, "wb") as f:
-                f.write(pdf_bytes)
-            print(f"✅ PDF saved successfully: {abs_path}")
-        except Exception as file_error:
-            print(f"❌ PDF file save error: {str(file_error)}")
-            return jsonify(success=False, message="Failed to save PDF file"), 500
-
-        # 📝 Запись в таблицу trips
-        print("📝 Saving trip to database...")
-        with conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                
+                creator_id = user_row['id']
+                
+                # Save PDF file if provided
+                pdf_file_path = None
+                if pdf_base64:
+                    try:
+                        # Create trips directory if it doesn't exist
+                        folder = os.path.join(current_app.root_path, "static", "trips")
+                        os.makedirs(folder, exist_ok=True)
+                        
+                        # Generate filename
+                        filename = f"{user}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+                        abs_path = os.path.join(folder, filename)
+                        rel_path = f"static/trips/{filename}"
+                        
+                        # Handle base64 data with or without data URL prefix
+                        if pdf_base64.startswith('data:application/pdf;base64,'):
+                            pdf_data = pdf_base64.split(',')[1]
+                        else:
+                            pdf_data = pdf_base64
+                        
+                        pdf_bytes = base64.b64decode(pdf_data)
+                        
+                        # Save PDF file
+                        with open(abs_path, "wb") as f:
+                            f.write(pdf_bytes)
+                        
+                        pdf_file_path = rel_path
+                        print(f"PDF saved successfully: {abs_path}")
+                        
+                    except Exception as file_error:
+                        print(f"PDF file save error: {str(file_error)}")
+                        return jsonify(success=False, message="Failed to save PDF file"), 500
+                
+                # Insert trip into database
                 cur.execute("""
                     INSERT INTO trips (name, creator_id, date_start, date_end, pdf_file_path)
                     VALUES (%s, %s, %s, %s, %s)
                     RETURNING id
-                """, (name, user_id, date_start, date_end, rel_path))
+                """, (name, creator_id, date_start, date_end, pdf_file_path))
+                
                 result = cur.fetchone()
                 if not result or "id" not in result:
-                    print("❌ Failed to create trip in database")
-                    return jsonify(success=False, message="Failed to create trip."), 500
+                    return jsonify(success=False, message="Failed to create trip"), 500
+                
                 trip_id = result["id"]
-                print(f"✅ Trip created with ID: {trip_id}")
-
+                
+                # Insert into trip_group
                 cur.execute("""
                     INSERT INTO trip_group (trip_id, user_id, role)
                     VALUES (%s, %s, 'creator')
-                """, (trip_id, user_id))
-                print(f"✅ User added to trip group as creator")
-
-        print(f"🎉 Trip saved successfully! ID: {trip_id}, PDF: {rel_path}")
-        return jsonify(success=True, trip_id=trip_id, pdf_path=rel_path), 201
-
+                """, (trip_id, creator_id))
+                
+                print(f"Trip saved successfully! ID: {trip_id}, PDF: {pdf_file_path}")
+        
+        return jsonify({'success': True}), 200
+        
     except Exception as e:
-        print(f"❌ Trip save with PDF error: {str(e)}")
+        print(f"Trip save with PDF error: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify(success=False, message="Server error"), 500

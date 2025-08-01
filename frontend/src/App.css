@@ -36,3 +36,15 @@
     transform: rotate(360deg);
   }
 }
+
+:root {
+  --btn-outline-bg: #ffffff;
+  --btn-outline-text: #000000;
+  --btn-outline-border: #cccccc;
+}
+
+body.dark-theme {
+  --btn-outline-bg: transparent;
+  --btn-outline-text: #ffffff;
+  --btn-outline-border: #ffffff;
+}

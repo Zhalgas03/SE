@@ -75,19 +75,19 @@ async function geocodePlaces(places, destination = "") {
         const lat = f.center[1];
         const lng = f.center[0];
 
-        // Проверка — точка в пределах 50 км от центра города
+        // Проверяем — точка в пределах 50 км
         const distance = haversineDistance(cityCoords.lat, cityCoords.lng, lat, lng);
         if (distance <= 50) {
-          results.push({ name: place, lat, lng });
+          results.push({ name: place, lat, lng, isFallback: false });
         } else {
-          results.push({ name: place, ...cityCoords });
+          results.push({ name: place, ...cityCoords, isFallback: true });
         }
       } else {
-        results.push({ name: place, ...cityCoords });
+        results.push({ name: place, ...cityCoords, isFallback: true });
       }
     } catch (err) {
       console.error(`Geocoding failed for: ${place}`, err);
-      results.push({ name: place, ...cityCoords });
+      results.push({ name: place, ...cityCoords, isFallback: true });
     }
   }
 

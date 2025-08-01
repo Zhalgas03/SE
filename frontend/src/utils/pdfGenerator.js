@@ -215,32 +215,122 @@ export const generateTripPDF = (tripData, tripName = "Trip Plan") => {
  */
 export const savePDFToServer = async (pdf, tripData, tripName) => {
   try {
+    console.log('🔧 PDF Server: Starting PDF save to server...');
+    
     // Convert PDF to base64
     const pdfBase64 = pdf.output('datauristring');
+    console.log('🔧 PDF Server: PDF converted to base64, length:', pdfBase64.length);
+    
+    // Get JWT token from localStorage
     const token = localStorage.getItem("token");
+    console.log('🔧 PDF Server: Token retrieved from localStorage:', token ? 'Present' : 'Missing');
 
     if (!token) {
-      throw new Error("Authentication token not found");
+      throw new Error("Authentication token not found. Please log in again.");
     }
 
+    // Validate token format (basic check)
+    if (!token.startsWith('eyJ') || token.split('.').length !== 3) {
+      throw new Error("Invalid token format. Please log in again.");
+    }
+
+    // Prepare request body
+    const requestBody = {
+      name: tripName,
+      date_start: new Date().toISOString().split('T')[0],
+      date_end: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      pdf_base64: pdfBase64
+    };
+
+    console.log('🔧 PDF Server: Request body prepared:', {
+      name: requestBody.name,
+      date_start: requestBody.date_start,
+      date_end: requestBody.date_end,
+      pdf_base64_length: requestBody.pdf_base64.length
+    });
+
+    // Make the request
+    console.log('🔧 PDF Server: Making POST request to /api/trips/save-with-pdf');
     const response = await fetch("/api/trips/save-with-pdf", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({
-        name: tripName,
-        date_start: new Date().toISOString().split('T')[0],
-        date_end: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        pdf_base64: pdfBase64
-      })
+      body: JSON.stringify(requestBody)
     });
 
-    const data = await response.json();
+    console.log('🔧 PDF Server: Response received:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+
+    // Check if response is ok (status 200-299)
+    if (!response.ok) {
+      // Try to get error details from response
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      let responseText = '';
+      
+      try {
+        responseText = await response.text();
+        console.error('🔧 PDF Server: Error response body:', responseText);
+        
+        // Try to parse as JSON for structured error messages
+        try {
+          const errorData = JSON.parse(responseText);
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.msg) {
+            errorMessage = errorData.msg;
+          }
+        } catch (jsonError) {
+          // If it's not JSON, it might be HTML error page
+          if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
+            errorMessage = `Server returned HTML error page (${response.status}). The server might be down or the endpoint doesn't exist.`;
+          } else {
+            errorMessage = `Server error: ${responseText.substring(0, 200)}...`;
+          }
+        }
+      } catch (textError) {
+        console.error('🔧 PDF Server: Could not read response text:', textError);
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    // Check if response has content
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error('🔧 PDF Server: Unexpected content type:', contentType);
+      throw new Error(`Expected JSON response but got ${contentType || 'unknown content type'}`);
+    }
+
+    // Parse JSON response
+    let data;
+    try {
+      data = await response.json();
+      console.log('🔧 PDF Server: Successfully parsed JSON response:', data);
+    } catch (jsonError) {
+      console.error('🔧 PDF Server: Failed to parse JSON response:', jsonError);
+      throw new Error('Server returned invalid JSON response');
+    }
+
+    // Validate response structure
+    if (typeof data !== 'object' || data === null) {
+      throw new Error('Server returned invalid response format');
+    }
+
+    console.log('🔧 PDF Server: PDF save completed successfully');
     return data;
+    
   } catch (error) {
-    console.error("Error saving PDF to server:", error);
+    console.error('❌ PDF Server: Error saving PDF to server:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     throw error;
   }
 }; 

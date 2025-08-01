@@ -1,5 +1,23 @@
 import React from 'react';
 
+// Функция форматирования дат
+function formatTravelDates(datesString) {
+  if (!datesString) return null;
+
+  // Ищем два диапазона дат, поддержка "10.08 to 12.08" или "10th August to 12th August 2025"
+  const regex = /(\d{1,2}(?:st|nd|rd|th)?\s?\w*\s?\d{0,4})\s*(?:to|-)\s*(\d{1,2}(?:st|nd|rd|th)?\s?\w*\s?\d{0,4})/i;
+  const match = datesString.match(regex);
+
+  if (match) {
+    const start = match[1].replace(/st|nd|rd|th/gi, '');
+    const end = match[2].replace(/st|nd|rd|th/gi, '');
+    return `${start} – ${end}`;
+  }
+
+  // Если формат другой (например, просто одна дата)
+  return datesString;
+}
+
 function TripHeader({ summary }) {
   if (!summary) {
     return (
@@ -18,12 +36,13 @@ function TripHeader({ summary }) {
     style,
     budget,
     trip_name,
-    dates,
     tags
   } = summary;
 
   const title = trip_name || `Trip from ${origin || 'Origin'} to ${destination || 'Destination'}`;
-  const displayDates = dates || (travel_dates ? `📅 ${travel_dates}` : '📅 Dates not set');
+
+  // Используем функцию форматирования
+  const displayDates = travel_dates ? `📅 ${formatTravelDates(travel_dates)}` : '📅 Dates not set';
 
   const defaultTags = [
     activities ? `🎯 ${activities}` : null,
