@@ -1,0 +1,39 @@
+.auth-container {
+  display: flex;
+  height: 100vh;
+}
+
+.photo-side {
+  width: 50%;
+  height: 100vh;
+}
+
+.form-side {
+  width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+@media (max-width: 767px) {
+  .auth-container {
+    flex-direction: column;
+  }
+
+  .photo-side {
+    display: none;
+  }
+
+  .form-side {
+    width: 100%;
+    padding: 1rem;
+
+    /* Центрируем по вертикали */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100vh;
+  }
+}
+
