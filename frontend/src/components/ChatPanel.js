@@ -17,31 +17,72 @@ const INITIAL_MESSAGES = [
       "\u{1F44B} Hello! I'm your smart travel planner. Let's start step-by-step!\nWhere would you like to go?",
   },
 ];
+// --- Парсим itinerary блок ---
+function parseItineraryMarkdown(markdown) {
+  const dayRegex = /\*\*Day\s*(\d+):\*\*([\s\S]*?)(?=(\*\*Day\s*\d+:|\Z))/gi;
+  const parsed = [];
 
-// --- Парсим ответ AI ---
+  let match;
+  while ((match = dayRegex.exec(markdown)) !== null) {
+    const dayNum = match[1];
+    const content = match[2];
+
+    const parts = [];
+    const sectionRegex = /[-–*]?\s*(Morning|Midday|Afternoon|Evening|Full day):\s*([\s\S]*?)(?=(?:[-–*]?\s*(Morning|Midday|Afternoon|Evening|Full day):)|$)/gi;
+
+    let sectionMatch;
+    while ((sectionMatch = sectionRegex.exec(content)) !== null) {
+      parts.push({
+        time: sectionMatch[1],
+        text: sectionMatch[2].trim(),
+      });
+    }
+
+    if (parts.length === 0) {
+      parts.push({
+        time: 'All Day',
+        text: content.replace(/^[-–*]?\s*/, '').trim(),
+      });
+    }
+
+    parsed.push({
+      title: `Day ${dayNum}`,
+      parts,
+    });
+  }
+
+  return parsed;
+}
+
+
+
 function parseTripSummary(text) {
   const destinationMatch = text.match(/\*\*Destination:\*\*\s*(.+)/i);
   const datesMatch = text.match(/\*\*Dates:\*\*\s*(.+)/i);
-
   const overviewMatch = text.match(/#### Overview\s*([\s\S]*?)####/i);
-  const itineraryMatch = text.match(/#### Itinerary\s*([\s\S]*?)####/i);
 
-  const itineraryLines = itineraryMatch
-    ? itineraryMatch[1].split(/[-*]\s+/).filter(Boolean)
+  const highlightsMatch = text.match(/#### Highlights\s*([\s\S]*?)####/i);
+  const highlights = highlightsMatch
+    ? highlightsMatch[1]
+        .split('\n')
+        .map(line => line.replace(/^[-*]\s*/, '').trim())
+        .filter(Boolean)
     : [];
 
-  const itinerary = itineraryLines.map((line, i) => ({
-    title: `Day ${i + 1}`,
-    description: line.trim(),
-  }));
+  const itineraryMatch = text.match(/#### Itinerary\s*([\s\S]*?)####?\s*(Return Trip|$)/i);
+  const itinerary = itineraryMatch
+    ? parseItineraryMarkdown(itineraryMatch[1])
+    : [];
 
   return {
     destination: destinationMatch?.[1]?.trim() || null,
     travel_dates: datesMatch?.[1]?.trim() || null,
-    overview: overviewMatch?.[1]?.trim() || "",
+    overview: overviewMatch?.[1]?.trim() || '',
+    highlights,
     itinerary,
   };
 }
+
 
 // --- ОЧИСТКА текста для геокодинга ---
 function cleanPlaceName(raw) {
@@ -209,16 +250,21 @@ export default function ChatPanel() {
       if (cityCoord) coords.push(cityCoord);
 
       // 2. Места из itinerary
-      if (parsed?.itinerary?.length > 0) {
-        for (const item of parsed.itinerary) {
-          const coord = await getCoordinatesForPlace(
-            item.description,
-            cityCoord,
-            parsed.destination
-          );
-          if (coord) coords.push(coord);
-        }
+if (parsed?.itinerary?.length > 0) {
+  for (const item of parsed.itinerary) {
+    if (Array.isArray(item.parts)) {
+      for (const part of item.parts) {
+        const coord = await getCoordinatesForPlace(
+          part.text,
+          cityCoord,
+          parsed.destination
+        );
+        if (coord) coords.push(coord);
       }
+    }
+  }
+}
+
 
       if (coords.length > 0) {
         parsed.coordinates = coords;
@@ -256,199 +302,77 @@ export default function ChatPanel() {
     },
   };
 
-  return (
-    <div>
-      {/* Карта */}
-      <div style={{ width: "100%", height: "300px" }}>
-        {coordinates.length > 0 ? (
-          <Map
-            {...viewState}
-            onMove={(evt) => setViewState(evt.viewState)}
-            style={{ width: "100%", height: "300px" }}
-            mapStyle="mapbox://styles/mapbox/streets-v11"
-            mapboxAccessToken={MAPBOX_TOKEN}
-          >
-            {/* Линия маршрута */}
-            <Source id="route" type="geojson" data={routeGeoJSON}>
-              <Layer
-                id="route-line"
-                type="line"
-                paint={{
-                  "line-color": "#3b82f6",
-                  "line-width": 4,
-                }}
-              />
-            </Source>
-
-            {/* Маркеры */}
-            {coordinates.map((point, i) => (
-              <Marker
-                key={i}
-                longitude={point.lng}
-                latitude={point.lat}
-                anchor="center"
-                onClick={(e) => {
-                  e.originalEvent.stopPropagation();
-                  setPopupInfo(
-                    `Day ${i + 1}: ${point.name || "Unknown"} (${
-                      tripSummary?.destination || ""
-                    })`
-                  );
-                }}
-              >
-                <div
-                  style={{
-                    backgroundColor: i === 0 ? "red" : "blue",
-                    color: "white",
-                    borderRadius: "50%",
-                    width: 24,
-                    height: 24,
-                    textAlign: "center",
-                    lineHeight: "24px",
-                    fontSize: 12,
-                    cursor: "pointer",
-                  }}
-                >
-                  {i + 1}
-                </div>
-              </Marker>
-            ))}
-
-            {/* Popup */}
-            {popupInfo && (
-              <Popup
-                longitude={
-                  coordinates[parseInt(popupInfo.split(" ")[1]) - 1].lng
-                }
-                latitude={
-                  coordinates[parseInt(popupInfo.split(" ")[1]) - 1].lat
-                }
-                onClose={() => setPopupInfo(null)}
-                closeOnClick={false}
-              >
-                {popupInfo}
-              </Popup>
-            )}
-          </Map>
-        ) : (
-          <div
-            style={{
-              width: "100%",
-              height: "300px",
-              textAlign: "center",
-              paddingTop: "100px",
-            }}
-          >
-            No route data yet
-          </div>
-        )}
+ return (
+    <div className="chat-container">
+      {/* New Chat button */}
+      <div className="px-1 px-sm-3 py-2 d-flex justify-content-end">
+        <button className="chat-btn d-flex align-items-center gap-2" onClick={clearChat} disabled={loading}>
+          <span className="icon-circle"><i className="bi bi-plus-lg"></i></span>
+          <span className="d-none d-sm-inline">New Chat</span>
+        </button>
       </div>
 
-      {/* Чат (без изменений) */}
-      <div className="chat-container">
-        <div className="px-1 px-sm-3 py-2 d-flex justify-content-end">
-          <button
-            className="chat-btn d-flex align-items-center gap-2"
-            onClick={clearChat}
-            disabled={loading}
+      {/* Chat messages area */}
+      <div className="flex-grow-1 overflow-auto chat-wrapper px-1 px-sm-3" style={{ paddingBottom: '0.5rem' }}>
+        {messages.map((msg) => (
+          <motion.div
+            key={msg.id}
+            className={`d-flex ${msg.role === 'user' ? 'justify-content-end' : 'justify-content-start'} mb-2`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
           >
-            <span className="icon-circle">
-              <i className="bi bi-plus-lg"></i>
-            </span>
-            <span className="d-none d-sm-inline">New Chat</span>
-          </button>
-        </div>
-
-        <div
-          className="flex-grow-1 overflow-auto chat-wrapper px-1 px-sm-3"
-          style={{ paddingBottom: "0.5rem" }}
-        >
-          {messages.map((msg) => (
-            <motion.div
-              key={msg.id}
-              className={`d-flex ${
-                msg.role === "user" ? "justify-content-end" : "justify-content-start"
-              } mb-2`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
+            <div
+              className={`p-2 px-3 rounded-4 fw-normal fs-6 lh-base shadow-sm ${msg.role === 'user' ? 'bg-primary text-white' : 'bg-white text-dark border'}`}
+              style={{ maxWidth: '80%', whiteSpace: 'pre-wrap', wordBreak: 'break-word', borderRadius: '18px' }}
             >
-              <div
-                className={`p-2 px-3 rounded-4 fw-normal fs-6 lh-base shadow-sm ${
-                  msg.role === "user"
-                    ? "bg-primary text-white"
-                    : "bg-white text-dark border"
-                }`}
-                style={{
-                  maxWidth: "80%",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                  borderRadius: "18px",
-                }}
-              >
-                {msg.content}
+              {msg.content}
+            </div>
+          </motion.div>
+        ))}
+
+        <AnimatePresence>
+          {loading && (
+            <motion.div className="d-flex justify-content-start mb-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="p-2 px-3 rounded-4 bg-white text-dark fs-6 d-flex align-items-center border" style={{ maxWidth: '75%' }}>
+                <div className="typing-loader"><span></span><span></span><span></span></div>
               </div>
             </motion.div>
-          ))}
+          )}
+        </AnimatePresence>
+        <div ref={chatEndRef} />
+      </div>
 
-          <AnimatePresence>
-            {loading && (
-              <motion.div
-                className="d-flex justify-content-start mb-2"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <div
-                  className="p-2 px-3 rounded-4 bg-white text-dark fs-6 d-flex align-items-center border"
-                  style={{ maxWidth: "75%" }}
-                >
-                  <div className="typing-loader">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <div ref={chatEndRef} />
-        </div>
-
-        <div className="chat-wrapper px-1 px-sm-3">
-          <div className="d-flex align-items-end gap-2 p-2 border rounded-4 bg-white shadow-sm">
-            <textarea
-              ref={textareaRef}
-              className="form-control border-0 px-2 py-1"
-              placeholder="Type your message here..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) =>
-                e.key === "Enter" && !e.shiftKey
-                  ? (e.preventDefault(), handleSend())
-                  : null
-              }
-              rows={1}
-              style={{
-                resize: "none",
-                fontSize: "16px",
-                boxShadow: "none",
-                outline: "none",
-                overflow: "hidden",
-                maxHeight: "150px",
-                lineHeight: "1.5",
-                flex: 1,
-              }}
-            />
-            <button
-              className="btn btn-primary rounded-circle"
-              style={{ width: "42px", height: "42px" }}
-              onClick={handleSend}
-              disabled={loading || !input.trim()}
-            >
-              <i className="bi bi-send-fill"></i>
-            </button>
-          </div>
+      {/* Chat input */}
+      <div className="chat-wrapper px-1 px-sm-3">
+        <div className="d-flex align-items-end gap-2 p-2 border rounded-4 bg-white shadow-sm">
+          <textarea
+            ref={textareaRef}
+            className="form-control border-0 px-2 py-1"
+            placeholder="Type your message here..."
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => (e.key === 'Enter' && !e.shiftKey ? (e.preventDefault(), handleSend()) : null)}
+            rows={1}
+            style={{
+              resize: 'none',
+              fontSize: '16px',
+              boxShadow: 'none',
+              outline: 'none',
+              overflow: 'hidden',
+              maxHeight: '150px',
+              lineHeight: '1.5',
+              flex: 1
+            }}
+          />
+          <button
+            className="btn btn-primary rounded-circle"
+            style={{ width: '42px', height: '42px' }}
+            onClick={handleSend}
+            disabled={loading || !input.trim()}
+          >
+            <i className="bi bi-send-fill"></i>
+          </button>
         </div>
       </div>
     </div>

@@ -49,30 +49,53 @@ After collecting all 7 answers, output the trip plan in the following Markdown f
 **Travel Group:** <Solo/Couple/Friends/Family>
 
 #### Overview  
-<2–3 sentence summary>
+<2–3 sentence summary of the trip>
 
 #### Highlights  
-- <point 1>  
-- <point 2>  
-- <point 3>
+- <Highlight 1: specific place, food or activity>  
+- <Highlight 2: another specific, not general>  
+- <Highlight 3: another one, detailed>  
+
+> ⚠️ This block is **mandatory**. Include at least 3 highlights. Each must start with `- ` and describe something specific: a named location, a cultural event, a local dish, or unique experience. Avoid vague phrases like “enjoy the city”.
 
 #### Itinerary  
-- Day 1: <plan>  
-- Day 2: <plan>  
-- Day 3: <plan>  
-(You can include more days if needed)
+List each day in the following **strict format**:
+
+**Day 1:**  
+**Morning:** <2–3 full sentences>  
+**Midday:** <2–3 full sentences>  
+**Afternoon:** <2–3 full sentences>  
+**Evening:** <2–3 full sentences>
+
+Then:
+
+**Day 2:**  
+**Morning:** <...>  
+...
+
+🛑 Strict Rules (must follow!):
+- Each day must start with `**Day X:**` (no dashes, no extra text, no `–`).
+- Time blocks must be `**Morning:**`, `**Midday:**`, `**Afternoon:**`, `**Evening:**`
+- Do **not** use bullets (`-`, `*`, `•`) before `Day` or time blocks.
+- Do **not** include anything after `Day X:` (no subtitles or event names).
+- Do **not** skip any of the 4 time blocks — include all of them even if short.
+- Each time block must contain multiple full sentences with specific activities, places, food, and tips.
+
+
+Each time block must include multiple complete sentences and mention specific activities, locations, local cuisine, and tips.
 
 #### Return Trip  
-<return details>
+<return details — how user returns to departure city>
 
 ---
 
 ❌ Do not use other sections  
 ❌ Do not wrap answers in quotes or italics  
-❌ Do not use headers like ## Trip Plan
+❌ Do not use headers like ## Trip Plan  
 ❌ Do not explain anything — just the formatted output
 """
 }
+
 
 
 @chat_bp.route('/perplexity-chat', methods=['POST'])

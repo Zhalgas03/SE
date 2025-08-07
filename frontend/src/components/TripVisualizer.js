@@ -67,7 +67,6 @@ function TripVisualizer() {
 
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
-      // 📦 Отправляем PDF на сервер
       const pdfBase64 = pdf.output('datauristring');
       const token = localStorage.getItem("token");
 
@@ -88,7 +87,6 @@ function TripVisualizer() {
       const data = await res.json();
       if (data.success) {
         setSavedSuccessfully(true);
-        pdf.save("trip-plan.pdf");
         alert("✅ Trip saved and downloaded.");
       } else {
         alert("❌ Failed to save trip: " + data.message);
@@ -106,11 +104,23 @@ function TripVisualizer() {
     }
   };
 
+  // 👉 Подсказка до генерации
+  if (!tripSummary) {
+    return (
+      <div className="d-flex justify-content-center align-items-center h-100 text-muted p-4">
+        <div className="text-center">
+          <h5 className="fw-semibold mb-2">🧭 Trip Plan will appear here</h5>
+          <p className="mb-0">Start planning your trip using the chat on the left!</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="trip-visualizer-container px-4 py-4 rounded-4">
       <div className="text-end mb-3">
         <button className="btn btn-outline-secondary" onClick={handleSaveToPDF}>
-          {savedSuccessfully ? "✅ Trip saved" : "Save to PDF"}
+          {savedSuccessfully ? "✅ Trip saved" : "Save trip"}
         </button>
       </div>
 

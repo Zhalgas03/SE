@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import PdfViewer from "../components/PdfViewer";
+import CreateVotingModal from "../components/CreateVotingModal";
 
 function Favorites() {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPdf, setSelectedPdf] = useState(null);
+  const [selectedTrip, setSelectedTrip] = useState(null);
 
   useEffect(() => {
     const fetchTrips = async () => {
@@ -43,6 +47,7 @@ function Favorites() {
       const data = await res.json();
       if (data.success) {
         setTrips(prev => prev.filter(trip => trip.id !== tripId));
+        setSelectedPdf(null);
       } else {
         alert("Failed to delete trip.");
       }
@@ -74,16 +79,22 @@ function Favorites() {
               <p className="text-muted small">
                 {trip.date_start?.split('T')[0]} → {trip.date_end?.split('T')[0]}
               </p>
-              <div className="d-flex justify-content-between align-items-center">
-                <a
+              <div className="d-flex justify-content-between align-items-center mt-2">
+                <button
                   className="btn btn-outline-primary btn-sm"
-                  href={`http://localhost:5001/${trip.pdf_file_path}`}
-                  download
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={() => setSelectedPdf(`http://localhost:5001/${trip.pdf_file_path}`)}
                 >
-                  📥 Overview
-                </a>
+                  📄 View
+                </button>
+
+                <div className='d-flex gap-2'>
+                  <button 
+                    className='btn btn-outline-secondary btn-sm'
+                    onClick={()=> setSelectedTrip(trip)}
+                  >
+                    🗳 Create poll
+                  </button>
+
                 <button
                   className="btn btn-outline-danger btn-sm ms-2"
                   onClick={() => handleDelete(trip.id)}
@@ -92,9 +103,66 @@ function Favorites() {
                 </button>
               </div>
             </div>
+            </div>
           </div>
         ))}
       </div>
+
+      {selectedPdf && (
+        <div
+          className="modal d-block bg-dark bg-opacity-75"
+          tabIndex="-1"
+          onClick={() => setSelectedPdf(null)}
+          style={{ zIndex: 1050 }}
+        >
+          <div
+            className="modal-dialog modal-xl modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div className="modal-header justify-content-between">
+                <h5 className="modal-title">Trip Overview</h5>
+                <div className="d-flex gap-2">
+                  <button
+                    className="btn btn-outline-danger btn-sm"
+                    onClick={() => {
+                      const trip = trips.find(t => `http://localhost:5001/${t.pdf_file_path}` === selectedPdf);
+                      if (trip) handleDelete(trip.id);
+                    }}
+                  >
+                    🗑 Delete
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => setSelectedPdf(null)}
+                  ></button>
+                </div>
+              </div>
+              <div
+                className="modal-body d-flex justify-content-center"
+                style={{
+                  maxHeight: "80vh",
+                  overflowY: "auto",
+                  padding: "1rem",
+                  backgroundColor: "#f8f9fa",
+                }}
+              >
+                <div className="w-100">
+                  <PdfViewer url={selectedPdf} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+        <CreateVotingModal
+          open={!!selectedTrip}
+          onClose={() => setSelectedTrip(null)}
+          trip={selectedTrip}
+        />
+
     </div>
   );
 }
