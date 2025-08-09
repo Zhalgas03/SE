@@ -1,0 +1,152 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-container {
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 1.5rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.modal-title {
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 0.25rem;
+}
+
+.modal-subtitle {
+  font-size: 1.1rem;
+  text-align: center;
+  color: #777;
+  margin-bottom: 1.5rem;
+}
+
+.modal-label {
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+  color: #333;
+  display: block;
+}
+
+.modal-input,
+.modal-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 0.75rem;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
+  font-size: 0.95rem;
+}
+
+.modal-textarea {
+  resize: none;
+  height: 90px;
+}
+
+.modal-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modal-row > div {
+  flex: 1;
+}
+
+.modal-checkbox-label {
+  font-size: 0.95rem;
+  color: #444;
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.modal-checkbox {
+  margin-right: 0.5rem;
+}
+
+.modal-message {
+  font-size: 0.95rem;
+  color: green;
+  margin-bottom: 0.5rem;
+}
+
+.modal-link {
+  font-size: 0.95rem;
+  word-break: break-all;
+  margin-bottom: 1rem;
+}
+
+.modal-link a {
+  color: #0077cc;
+  text-decoration: underline;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.modal-btn {
+  padding: 0.6rem 1.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  border: none;
+}
+
+.modal-btn.cancel {
+  background-color: #eeeeee;
+  color: #000000;
+}
+
+.modal-btn.create {
+  background-color: #28a745;
+  color: white;
+}
+
+/* Animation setup */
+.scale-in {
+  animation: scaleIn 350ms ease-out forwards;
+}
+
+.scale-out {
+  animation: scaleOut 350ms ease-in forwards;
+}
+
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scaleOut {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+

@@ -18,7 +18,7 @@ from utils.protect_blueprint import protect_blueprint
 from routes.stripe_routes import stripe_bp
 from services.system_prompt import SYSTEM_PROMPT
 from flask import send_from_directory
-
+from routes.admin import admin_bp
 load_dotenv()
 
 
@@ -41,7 +41,7 @@ github_bp = make_github_blueprint(
 protect_blueprint(user_bp, require_login=True)
 
 protect_blueprint(notifications_bp, require_login=True, require_subscription=True)
-
+app.register_blueprint(admin_bp)
 app.register_blueprint(github_bp)
 
 app.register_blueprint(session_bp)

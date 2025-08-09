@@ -141,7 +141,14 @@ def login():
                 else:
                     # 2FA выключена → сразу JWT
                     access_token = create_access_token(identity=username)
-                    return make_response(jsonify(success=True, token=access_token, username=username), 200)
+                    user_dict = {
+                        "id": user["id"],
+                        "username": user["username"],
+                        "email": user["email"],
+                        "role": user["role"],
+                        "is_2fa_enabled": user["is_2fa_enabled"]
+                    }
+                    return make_response(jsonify(success=True, token=access_token, user=user_dict), 200)
 
     except Exception as e:
         print("Login error:", str(e))
@@ -186,8 +193,22 @@ def verify_2fa():
                 return jsonify(success=False, message="User not found."), 404
 
             # Выдать токен
-            access_token = create_access_token(identity=user["username"])
-            return jsonify(success=True, token=access_token, username=user["username"]), 200
+            # Получить все поля для user
+            cur.execute("SELECT id, username, email, role, is_2fa_enabled FROM users WHERE email = %s", (email,))
+            user_full = cur.fetchone()
+            if not user_full:
+                return jsonify(success=False, message="User not found."), 404
+
+            access_token = create_access_token(identity=user_full["username"])
+            user_dict = {
+                "id": user_full["id"],
+                "username": user_full["username"],
+                "email": user_full["email"],
+                "role": user_full["role"],
+                "is_2fa_enabled": user_full["is_2fa_enabled"]
+            }
+            return jsonify(success=True, token=access_token, user=user_dict), 200
+
 
     except Exception as e:
         print("2FA verification error:", str(e))

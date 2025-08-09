@@ -7,6 +7,7 @@ function Favorites() {
   const [loading, setLoading] = useState(true);
   const [selectedPdf, setSelectedPdf] = useState(null);
   const [selectedTrip, setSelectedTrip] = useState(null);
+  const [origin, setOrigin] = useState({ x: 0, y: 0 }); // 💡 добавлено
 
   useEffect(() => {
     const fetchTrips = async () => {
@@ -90,19 +91,26 @@ function Favorites() {
                 <div className='d-flex gap-2'>
                   <button 
                     className='btn btn-outline-secondary btn-sm'
-                    onClick={()=> setSelectedTrip(trip)}
+                    onClick={(e) => {
+                      const rect = e.target.getBoundingClientRect();
+                      setOrigin({
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2
+                      });
+                      setSelectedTrip(trip);
+                    }}
                   >
                     🗳 Create poll
                   </button>
 
-                <button
-                  className="btn btn-outline-danger btn-sm ms-2"
-                  onClick={() => handleDelete(trip.id)}
-                >
-                  🗑 Delete
-                </button>
+                  <button
+                    className="btn btn-outline-danger btn-sm ms-2"
+                    onClick={() => handleDelete(trip.id)}
+                  >
+                    🗑 Delete
+                  </button>
+                </div>
               </div>
-            </div>
             </div>
           </div>
         ))}
@@ -157,12 +165,12 @@ function Favorites() {
         </div>
       )}
 
-        <CreateVotingModal
-          open={!!selectedTrip}
-          onClose={() => setSelectedTrip(null)}
-          trip={selectedTrip}
-        />
-
+      <CreateVotingModal
+        open={!!selectedTrip}
+        onClose={() => setSelectedTrip(null)}
+        trip={selectedTrip}
+        origin={origin} // 💡 добавлено
+      />
     </div>
   );
 }

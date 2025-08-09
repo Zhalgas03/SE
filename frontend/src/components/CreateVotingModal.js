@@ -1,7 +1,11 @@
-import React, { useState } from "react";
-import axios from "axios";
+import React, { useState, useEffect, useRef } from "react";
+import "./CreateVotingModal.css";
 
-function CreateVotingModal({ open, onClose, trip }) {
+function CreateVotingModal({ open, onClose, trip, origin }) {
+  const containerRef = useRef();
+  const [isVisible, setIsVisible] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
@@ -10,99 +14,157 @@ function CreateVotingModal({ open, onClose, trip }) {
   const [message, setMessage] = useState("");
   const [votingLink, setVotingLink] = useState("");
 
-  const handleCreate = async () => {
-    try {
-      const token = localStorage.getItem("token");
-  
-      const res = await axios.post("http://localhost:5001/api/votes/sessions", {
-        trip_id: trip.id,
-        title,
-        description,
-        expires_at: expiresAt,
-        rules: {
-          expected_votes: expectedVotes,
-          anonymous_allowed: allowAnonymous,
-        },
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-  
-      const { share_link } = res.data;
-      setMessage("Voting created! Link copied.");
-      navigator.clipboard.writeText(`${window.location.origin}/vote/${share_link}`);
-      setVotingLink(`${window.location.origin}/vote/${share_link}`);
+  // 👉 Сброс всех полей при открытии
+  useEffect(() => {
+    if (open && trip?.id) {
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const iso = tomorrow.toISOString().slice(0, 16); // 'YYYY-MM-DDTHH:mm'
 
-    } catch (err) {
-      console.error(err);
-      setMessage("Error creating voting");
+      setTitle("");
+      setDescription("");
+      setExpiresAt(iso);
+      setExpectedVotes(3);
+      setAllowAnonymous(true);
+      setMessage("");
+      setVotingLink("");
+
+      setIsVisible(true);
+      setIsClosing(false);
+    }
+  }, [open, trip?.id]);
+
+  // Scale-in эффект
+  useEffect(() => {
+    if (open && containerRef.current && origin) {
+      const modal = containerRef.current;
+      const x = origin.x - window.innerWidth / 2;
+      const y = origin.y - window.innerHeight / 2;
+      modal.style.transformOrigin = `${50 + (x / modal.offsetWidth) * 100}% ${50 + (y / modal.offsetHeight) * 100}%`;
+
+      modal.classList.remove("scale-out");
+      requestAnimationFrame(() => {
+        modal.classList.add("scale-in");
+      });
+    }
+  }, [open, origin]);
+
+  const handleClose = () => {
+    const modal = containerRef.current;
+    modal.classList.remove("scale-in");
+    modal.classList.add("scale-out");
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsVisible(false);
+      onClose();
+    }, 250);
+  };
+
+  const handleBackdropClick = (e) => {
+    if (e.target.classList.contains("modal-overlay")) {
+      handleClose();
     }
   };
 
-  if (!open || !trip) return null;
+  const handleCreate = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("http://localhost:5001/api/votes/sessions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          trip_id: trip.id,
+          title,
+          description,
+          expires_at: expiresAt,
+          rules: {
+            expected_votes: expectedVotes,
+            anonymous_allowed: allowAnonymous,
+          },
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to create voting");
+
+      const data = await res.json();
+      const fullLink = `${window.location.origin}/vote/${data.share_link}`;
+      setVotingLink(fullLink);
+      navigator.clipboard.writeText(fullLink);
+      setMessage("✅ Voting created! Link copied.");
+    } catch (err) {
+      console.error(err);
+      setMessage("❌ Error creating voting");
+    }
+  };
+
+  if (!open && !isVisible) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded max-w-md w-full">
-        <h2 className="text-xl font-bold mb-4">Create voting for «{trip.name}»</h2>
+    <div className="modal-overlay" onClick={handleBackdropClick}>
+      <div ref={containerRef} className="modal-container">
+        <h2 className="modal-title">🗳️ Create Voting</h2>
+        <p className="modal-subtitle">For “{trip?.name || "Unnamed Trip"}”</p>
 
-        <input
-          className="w-full border p-2 mb-2"
-          placeholder="Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
+        <label className="modal-label">Title</label>
+        <input className="modal-input" value={title} onChange={(e) => setTitle(e.target.value)} />
+
+        <label className="modal-label">Description</label>
         <textarea
-          className="w-full border p-2 mb-2"
-          placeholder="Description"
+          className="modal-textarea"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-        <input
-          type="datetime-local"
-          className="w-full border p-2 mb-2"
-          value={expiresAt}
-          onChange={(e) => setExpiresAt(e.target.value)}
-        />
-        <input
-          type="number"
-          min="1"
-          className="w-full border p-2 mb-2"
-          placeholder="Expected number of votes"
-          value={expectedVotes}
-          onChange={(e) => setExpectedVotes(Number(e.target.value))}
-        />
-        <label className="flex items-center mb-4">
+
+        <div className="modal-row">
+          <div>
+            <label className="modal-label">Expires At</label>
+            <input
+              type="datetime-local"
+              className="modal-input"
+              value={expiresAt}
+              onChange={(e) => setExpiresAt(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="modal-label">Expected Votes</label>
+            <input
+              type="number"
+              className="modal-input"
+              value={expectedVotes}
+              min={1}
+              onChange={(e) => setExpectedVotes(Number(e.target.value))}
+            />
+          </div>
+        </div>
+
+        <label className="modal-checkbox-label">
           <input
             type="checkbox"
             checked={allowAnonymous}
             onChange={(e) => setAllowAnonymous(e.target.checked)}
-            className="mr-2"
+            className="modal-checkbox"
           />
           Allow anonymous voting
         </label>
 
-        {message && <p className="text-blue-600 mb-2">{message}</p>}
+        {message && <div className="modal-message">{message}</div>}
         {votingLink && (
-            <div className="mt-2">
-                <p className="text-sm text-gray-600">Shareable link:</p>
-                <a
-                href={votingLink}
-                className="text-blue-700 underline break-all"
-                target="_blank"
-                rel="noopener noreferrer"
-                >
-                {votingLink}
-                </a>
-            </div>
+          <div className="modal-link">
+            <a href={votingLink} target="_blank" rel="noopener noreferrer">
+              {votingLink}
+            </a>
+          </div>
         )}
-        <div className="flex justify-between">
-          <button className="bg-gray-500 text-white px-4 py-2 rounded" onClick={onClose}>
+
+        <div className="modal-buttons">
+          <button className="modal-btn cancel" onClick={handleClose}>
             Cancel
           </button>
-          <button className="bg-green-600 text-white px-4 py-2 rounded" onClick={handleCreate}>
-            Create
+          <button className="modal-btn create" onClick={handleCreate}>
+            + Create
           </button>
         </div>
       </div>

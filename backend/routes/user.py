@@ -15,11 +15,10 @@ user_bp = Blueprint("user", __name__, url_prefix="/api/user")
 @jwt_required()
 def get_profile():
     username = get_jwt_identity()
-
     conn = get_db_connection()
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute("""
-            SELECT username, email, is_2fa_enabled 
+            SELECT id, username, email, role, is_2fa_enabled 
             FROM users 
             WHERE username = %s
         """, (username,))
@@ -27,8 +26,8 @@ def get_profile():
         if not record:
             return jsonify(success=False, message="User not found"), 404
 
-        user = UserDict.from_db_row(record)
-        return jsonify(success=True, user=user.__dict__), 200
+        # Можно вернуть просто record, UserDict не нужен
+        return jsonify(success=True, user=record), 200
 
 
 @user_bp.route("/profile", methods=["PUT"])

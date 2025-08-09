@@ -1,0 +1,143 @@
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+
+function AdminPanelPage() {
+  const [users, setUsers] = useState([]);
+  const [trips, setTrips] = useState([]);
+  const [votes, setVotes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [usersRes, tripsRes, votesRes] = await Promise.all([
+        axios.get("/api/admin/users", { withCredentials: true }),
+        axios.get("/api/admin/trips", { withCredentials: true }),
+        axios.get("/api/admin/votes", { withCredentials: true }),
+      ]);
+
+      setUsers(usersRes.data || []);
+      setTrips(tripsRes.data || []);
+      setVotes(votesRes.data || []);
+      setError(null);
+    } catch (err) {
+      console.error("Admin panel fetch error:", err);
+      setError("Failed to load admin data.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  if (loading) return <p className="text-center mt-10">{'⏳ Loading...'}</p>;
+  if (error) return <p className="text-red-500 text-center mt-10">{error}</p>;
+
+  return (
+    <div className="max-w-6xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6 text-center">{'🛠️ Admin Dashboard'}</h1>
+
+      {/* USERS */}
+      <section className="mb-10">
+        <h2 className="text-2xl font-semibold mb-2">{'👤 Users'}</h2>
+        <div className="overflow-auto border rounded-md">
+          <table className="min-w-full table-auto text-sm">
+            <thead className="bg-gray-100 dark:bg-gray-800">
+              <tr>
+                <th className="px-4 py-2 text-left">Username</th>
+                <th className="px-4 py-2 text-left">Email</th>
+                <th className="px-4 py-2">Role</th>
+                <th className="px-4 py-2">2FA</th>
+                <th className="px-4 py-2">Subscribed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.length === 0 ? (
+                <tr><td colSpan="5" className="text-center py-4">No users found.</td></tr>
+              ) : (
+                users.map((user) => (
+                  <tr key={user.id || user.username} className="border-t">
+                    <td className="px-4 py-2">{user.username ?? "—"}</td>
+                    <td className="px-4 py-2">{user.email ?? "—"}</td>
+                    <td className="px-4 py-2 text-center">{user.role ?? "user"}</td>
+                    <td className="px-4 py-2 text-center">{user.is_2fa_enabled ? '✅' : '❌'}</td>
+                    <td className="px-4 py-2 text-center">{user.is_subscribed ? '✅' : '❌'}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* TRIPS */}
+      <section className="mb-10">
+        <h2 className="text-2xl font-semibold mb-2">{'✈️ Trips'}</h2>
+        <div className="overflow-auto border rounded-md">
+          <table className="min-w-full table-auto text-sm">
+            <thead className="bg-gray-100 dark:bg-gray-800">
+              <tr>
+                <th className="px-4 py-2 text-left">Name</th>
+                <th className="px-4 py-2">Start</th>
+                <th className="px-4 py-2">End</th>
+                <th className="px-4 py-2 text-left">Creator</th>
+              </tr>
+            </thead>
+            <tbody>
+              {trips.length === 0 ? (
+                <tr><td colSpan="4" className="text-center py-4">No trips found.</td></tr>
+              ) : (
+                trips.map((trip) => (
+                  <tr key={trip.id} className="border-t">
+                    <td className="px-4 py-2">{trip.name ?? "—"}</td>
+                    <td className="px-4 py-2 text-center">{trip.date_start ?? "—"}</td>
+                    <td className="px-4 py-2 text-center">{trip.date_end ?? "—"}</td>
+                    <td className="px-4 py-2">{trip.creator_username ?? "—"}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* VOTING */}
+      <section className="mb-10">
+        <h2 className="text-2xl font-semibold mb-2">{'🗳️ Voting Sessions'}</h2>
+        <div className="overflow-auto border rounded-md">
+          <table className="min-w-full table-auto text-sm">
+            <thead className="bg-gray-100 dark:bg-gray-800">
+              <tr>
+                <th className="px-4 py-2 text-left">Title</th>
+                <th className="px-4 py-2">Status</th>
+                <th className="px-4 py-2">Expires</th>
+                <th className="px-4 py-2 text-left">Creator</th>
+              </tr>
+            </thead>
+            <tbody>
+              {votes.length === 0 ? (
+                <tr><td colSpan="4" className="text-center py-4">No voting sessions found.</td></tr>
+              ) : (
+                votes.map((v) => (
+                  <tr key={v.id} className="border-t">
+                    <td className="px-4 py-2">{v.title ?? "—"}</td>
+                    <td className="px-4 py-2 text-center">{v.status ?? "unknown"}</td>
+                    <td className="px-4 py-2 text-center">
+                      {v.expires_at ? new Date(v.expires_at).toLocaleString() : "—"}
+                    </td>
+                    <td className="px-4 py-2">{v.creator_username ?? "—"}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export default AdminPanelPage;

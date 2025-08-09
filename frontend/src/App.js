@@ -18,6 +18,7 @@ import Cancel from './pages/Cancel';
 import Favorites from './pages/Favorites';
 import { TripProvider } from './context/TripContext';
 import VotePage from './pages/VotePage';
+import AdminPanelPage from './pages/AdminPanelPage.js'; // ✅ добавлено
 
 function AppContent() {
   const location = useLocation();
@@ -47,6 +48,7 @@ function AppContent() {
         <Route path="/success" element={<Success />} />
         <Route path="/cancel" element={<Cancel />} />
         <Route path="/vote/:share_link" element={<VotePage />} />
+        <Route path="/admin" element={<AdminPanelPage />} /> {/* ✅ добавлено */}
       </Routes>
     </>
   );

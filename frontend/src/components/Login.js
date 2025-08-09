@@ -89,7 +89,7 @@ useEffect(() => {
       console.log("SERVER RESPONSE:", data);
 
       if (data.success && data.token) {
-        setUser({ email: form.email, username: data.username }, data.token);
+        setUser(data.user, data.token);
         navigate('/');
       } else if (data.success && !data.token) {
         setShow2FA(true);
@@ -117,7 +117,7 @@ useEffect(() => {
 
       const data = await res.json();
       if (data.success) {
-        setUser({ email: form.email, username: data.username }, data.token);
+        setUser(data.user, data.token);
         navigate('/');
       } else {
         setVerifyError(data.message || "Verification failed");
