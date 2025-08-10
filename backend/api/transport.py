@@ -64,40 +64,115 @@ def _amadeus_locations(city: str):
     r.raise_for_status()
     return r.json().get("data", [])
 
+def _amadeus_airports_nearby(lat: float, lon: float, radius_km: int = 300):
+    """Ищем аэропорты рядом с координатами города."""
+    token = _get_amadeus_token()
+    url = "https://test.api.amadeus.com/v1/reference-data/locations/airports"
+    params = {"latitude": lat, "longitude": lon, "radius": radius_km, "page[limit]": 5}
+    r = requests.get(url, headers={"Authorization": f"Bearer {token}"}, params=params, timeout=12)
+    r.raise_for_status()
+    return r.json().get("data", [])
+
+
 def _pick_airport_and_coords(city: str):
     """
-    Возвращает (iata_code, (lat, lon)):
-    - сначала ближайший AIRPORT,
-    - иначе код CITY (типа ROM/ALA) и его координаты.
+    Возвращает (iata_code, (lat, lon)).
+    Приоритет:
+      1) Точно совпадающий CITY по имени → его код (напр. ALA для Almaty) + координаты
+      2) AIRPORT в нужной стране/городе (если можем угадать страну по геокодингу)
+      3) Если по keyword не нашли хорошее — Google геокодинг → Amadeus airports-nearby
     """
-    data = []
-    try:
-        data = _amadeus_locations(city)
-    except Exception as e:
-        print("[AMADEUS locations ERROR]", e)
-
+    target_city = (city or "").strip()
     code = None
     lat = lon = None
 
-    # приоритет: AIRPORT
-    airport = next((d for d in data if d.get("subType") == "AIRPORT" and d.get("iataCode")), None)
-    if airport:
-        code = airport["iataCode"]
-        geo = airport.get("geoCode") or {}
-        lat, lon = geo.get("latitude"), geo.get("longitude")
+    # A) пробуем Amadeus locations (CITY/AIRPORT)
+    try:
+        data = _amadeus_locations(target_city)
+    except Exception as e:
+        print("[AMADEUS locations ERROR]", e)
+        data = []
 
-    # fallback: CITY
+    # Попробуем получить подсказку по стране из Google (для фильтрации аэропортов)
+    country_code = None
+    gc = _google_geocode_city(target_city)
+    if gc:
+        lat, lon = gc  # координаты города
+        # выдёргивать страну из geocode можно отдельной функцией (если нужно строго),
+        # но для простоты оставим country_code=None — фильтрации по стране может и не быть.
+
+    # 1) Ищем CITY с точным совпадением по имени (без регистра)
+    city_exact = next(
+        (d for d in data
+         if d.get("subType") == "CITY"
+         and isinstance(d.get("name"), str)
+         and d["name"].strip().lower() == target_city.lower()
+         and d.get("iataCode")),
+        None
+    )
+    if city_exact:
+        code = city_exact["iataCode"]
+        geo = city_exact.get("geoCode") or {}
+        lat = lat if lat is not None else geo.get("latitude")
+        lon = lon if lon is not None else geo.get("longitude")
+
+    # 2) Если нет — ищем AIRPORT, у которого есть привязка к этому городу по имени
     if not code:
-        city_rec = next((d for d in data if d.get("subType") == "CITY" and d.get("iataCode")), None)
-        if city_rec:
-            code = city_rec.get("iataCode")
-            geo = city_rec.get("geoCode") or {}
-            lat = lat or geo.get("latitude")
-            lon = lon or geo.get("longitude")
+        airport_in_city = next(
+            (d for d in data
+             if d.get("subType") == "AIRPORT"
+             and d.get("iataCode")
+             and (
+                 (d.get("address") or {}).get("cityName", "").strip().lower() == target_city.lower()
+                 or (d.get("name") or "").lower().startswith(target_city.lower())
+             )),
+            None
+        )
+        if airport_in_city:
+            code = airport_in_city["iataCode"]
+            geo = airport_in_city.get("geoCode") or {}
+            if lat is None: lat = geo.get("latitude")
+            if lon is None: lon = geo.get("longitude")
 
-    # если совсем пусто — вернём None, координаты доберём через Google
+    # 3) Фолбэк: если кода нет — ищем ближайшие аэропорты вокруг города
+    if not code:
+        # координаты берём из Google (если ещё не взяли)
+        if lat is None or lon is None:
+            gc2 = _google_geocode_city(target_city)
+            if gc2:
+                lat, lon = gc2
+        if lat is not None and lon is not None:
+            try:
+                nearby = _amadeus_airports_nearby(lat, lon, radius_km=400)
+                # сначала аэропорты, где address.cityName совпадает
+                airport_exact_city = next(
+                    (a for a in nearby
+                     if (a.get("address") or {}).get("cityName", "").strip().lower() == target_city.lower()
+                     and a.get("iataCode")),
+                    None
+                )
+                if airport_exact_city:
+                    code = airport_exact_city["iataCode"]
+                elif nearby:
+                    # иначе берём самый популярный/первый
+                    code = nearby[0].get("iataCode")
+            except Exception as e:
+                print("[AMADEUS airports-nearby ERROR]", e)
+
+    # 4) Маленький «исправитель» частых кейсов (можно расширять при желании)
+    overrides = {
+        "almaty": "ALA",
+        "alma-ata": "ALA",
+        "almati": "ALA",
+    }
+    if not code:
+        ov = overrides.get(target_city.lower())
+        if ov:
+            code = ov
+
     coords = (lat, lon) if (lat is not None and lon is not None) else None
     return code, coords
+
 
 
 
