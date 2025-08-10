@@ -1,23 +1,61 @@
+/* ===== THEMEABLE MODAL (sizes unchanged) ===== */
+
+/* modal color tokens (fallbacks use your global vars when есть) */
+:root {
+  --modal-bg: var(--card-bg, #ffffff);
+  --modal-text: var(--text-color, #212529);
+  --modal-muted: #777;
+  --modal-border: var(--border-color, #cccccc);
+  --modal-input-bg: var(--card-bg, #ffffff);
+  --modal-link: var(--btn-color, #0077cc);
+  --modal-cancel-bg: #eeeeee;
+  --modal-cancel-text: #000000;
+  --modal-success-bg: #28a745;
+  --modal-success-text: #ffffff;
+  --modal-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  --modal-overlay: rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme {
+  --modal-bg: var(--card-bg, #1e1e1e);
+  --modal-text: var(--text-color, #e0e0e0);
+  --modal-muted: #aaaaaa;
+  --modal-border: var(--border-color, #2c2c2c);
+  --modal-input-bg: var(--card-bg, #1e1e1e);
+  --modal-link: var(--btn-color, #4dabf7);
+  --modal-cancel-bg: #2a2a2a;
+  --modal-cancel-text: #e6e6e6;
+  --modal-success-bg: #2ea44f;        /* слегка холоднее зелёный в дарке */
+  --modal-success-text: #ffffff;
+  --modal-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+  --modal-overlay: rgba(0, 0, 0, 0.6);
+}
+
+/* === Overlay === */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--modal-overlay);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 999;
 }
 
+/* === Container === */
 .modal-container {
-  background: #ffffff;
+  background: var(--modal-bg);
+  color: var(--modal-text);
   padding: 2rem;
   border-radius: 1.5rem;
-  max-width: 500px;
-  width: 90%;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  max-width: 500px;   /* unchanged */
+  width: 90%;         /* unchanged */
+  box-shadow: var(--modal-shadow);
   font-family: 'Segoe UI', sans-serif;
+  transition: background-color .25s ease, color .25s ease, box-shadow .25s ease, border-color .25s ease;
 }
 
+/* === Typography === */
 .modal-title {
   font-size: 2rem;
   font-weight: 700;
@@ -28,33 +66,50 @@
 .modal-subtitle {
   font-size: 1.1rem;
   text-align: center;
-  color: #777;
+  color: var(--modal-muted);
   margin-bottom: 1.5rem;
 }
 
 .modal-label {
   font-size: 0.95rem;
   margin-bottom: 0.25rem;
-  color: #333;
+  color: var(--modal-text);
   display: block;
 }
 
+/* === Inputs === */
 .modal-input,
 .modal-textarea {
   width: 100%;
   padding: 0.75rem;
   margin-bottom: 1rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--modal-border);
   border-radius: 0.75rem;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
   font-size: 0.95rem;
+  background: var(--modal-input-bg);
+  color: var(--modal-text);
+  transition: background-color .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.modal-input::placeholder,
+.modal-textarea::placeholder {
+  color: var(--modal-muted);
+}
+
+.modal-input:focus,
+.modal-textarea:focus {
+  outline: none;
+  border-color: var(--btn-color, #0d6efd);
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, .25);
 }
 
 .modal-textarea {
   resize: none;
-  height: 90px;
+  height: 90px; /* unchanged */
 }
 
+/* === Layout === */
 .modal-row {
   display: flex;
   gap: 1rem;
@@ -67,7 +122,7 @@
 
 .modal-checkbox-label {
   font-size: 0.95rem;
-  color: #444;
+  color: var(--modal-text);
   display: flex;
   align-items: center;
   margin-bottom: 1rem;
@@ -77,6 +132,7 @@
   margin-right: 0.5rem;
 }
 
+/* === Helpers === */
 .modal-message {
   font-size: 0.95rem;
   color: green;
@@ -90,10 +146,11 @@
 }
 
 .modal-link a {
-  color: #0077cc;
+  color: var(--modal-link);
   text-decoration: underline;
 }
 
+/* === Buttons === */
 .modal-buttons {
   display: flex;
   justify-content: space-between;
@@ -107,19 +164,24 @@
   font-size: 1.1rem;
   cursor: pointer;
   border: none;
+  transition: filter .15s ease, background-color .2s ease, color .2s ease;
+}
+
+.modal-btn:hover {
+  filter: brightness(0.98);
 }
 
 .modal-btn.cancel {
-  background-color: #eeeeee;
-  color: #000000;
+  background-color: var(--modal-cancel-bg);
+  color: var(--modal-cancel-text);
 }
 
 .modal-btn.create {
-  background-color: #28a745;
-  color: white;
+  background-color: var(--modal-success-bg);
+  color: var(--modal-success-text);
 }
 
-/* Animation setup */
+/* === Animations === */
 .scale-in {
   animation: scaleIn 350ms ease-out forwards;
 }
@@ -129,24 +191,11 @@
 }
 
 @keyframes scaleIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.7);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  0% { opacity: 0; transform: scale(0.7); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 @keyframes scaleOut {
-  0% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.7);
-  }
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.7); }
 }
-

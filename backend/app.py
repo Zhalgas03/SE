@@ -19,6 +19,7 @@ from routes.stripe_routes import stripe_bp
 from services.system_prompt import SYSTEM_PROMPT
 from flask import send_from_directory
 from routes.admin import admin_bp
+from api.transport import transport_bp
 load_dotenv()
 
 
@@ -63,7 +64,7 @@ app.register_blueprint(notifications_bp)
 
 app.register_blueprint(stripe_bp)
 
-
+app.register_blueprint(transport_bp)
 
 
 print("📍 Registered routes:")

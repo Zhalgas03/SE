@@ -276,3 +276,17 @@ body.dark-theme {
   --btn-bg-hover: #64b5f6;
   --btn-text: #000000;
 }
+/* --- Page title theming (Saved Trips) --- */
+:root {
+  --page-title-color: #1f2937;   /* light */
+}
+body.dark-theme {
+  --page-title-color: #e5e7eb;   /* dark */
+}
+
+/* высокая специфичность + !important, чтобы перебить bootstrap */
+.container h3.fw-bold.mb-4,
+h3.fw-bold.mb-4 {
+  color: var(--page-title-color) !important;
+  transition: color .25s ease;
+}

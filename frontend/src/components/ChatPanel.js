@@ -18,68 +18,93 @@ const INITIAL_MESSAGES = [
   },
 ];
 // --- Парсим itinerary блок ---
-function parseItineraryMarkdown(markdown) {
-  const dayRegex = /\*\*Day\s*(\d+):\*\*([\s\S]*?)(?=(\*\*Day\s*\d+:|\Z))/gi;
-  const parsed = [];
+function parseItineraryMarkdown(markdown = "") {
+  const src = markdown.replace(/\r/g, "");
 
-  let match;
-  while ((match = dayRegex.exec(markdown)) !== null) {
-    const dayNum = match[1];
-    const content = match[2];
+  // Ловим Day с 0–2 звёздочками и любыми пробелами: **Day 5:**, *Day 5:*, Day 5:
+  const dayRe =
+    /\*{0,2}\s*Day\s*(\d+)\s*:\s*\*{0,2}\s*([\s\S]*?)(?=(?:\n\s*\*{0,2}\s*Day\s*\d+\s*:\s*\*{0,2})|\n\s*####|\n\s*###|$)/gi;
+
+  // Части дня: допускаем -,–,* в начале строки, 0–2 звёздочки вокруг метки, разные регистры
+  // и варианты "All Day"/"Full day"/"Night"
+  const partRe =
+    /(?:^|\n)\s*[-–*]?\s*\*{0,2}\s*(Morning|Midday|Afternoon|Evening|Full day|All Day|Night)\s*:\s*\*{0,2}\s*([\s\S]*?)(?=(?:\n\s*[-–*]?\s*\*{0,2}\s*(Morning|Midday|Afternoon|Evening|Full day|All Day|Night)\s*:\s*\*{0,2})|$)/gi;
+
+  const days = [];
+  let m;
+  while ((m = dayRe.exec(src)) !== null) {
+    const dayNum = Number(m[1]);
+    const body = m[2].trim();
 
     const parts = [];
-    const sectionRegex = /[-–*]?\s*(Morning|Midday|Afternoon|Evening|Full day):\s*([\s\S]*?)(?=(?:[-–*]?\s*(Morning|Midday|Afternoon|Evening|Full day):)|$)/gi;
-
-    let sectionMatch;
-    while ((sectionMatch = sectionRegex.exec(content)) !== null) {
+    let pm;
+    while ((pm = partRe.exec(body)) !== null) {
       parts.push({
-        time: sectionMatch[1],
-        text: sectionMatch[2].trim(),
+        time: pm[1],
+        text: pm[2].trim().replace(/\s*\*+$/g, "") // убрать хвостовые ***
       });
     }
 
-    if (parts.length === 0) {
-      parts.push({
-        time: 'All Day',
-        text: content.replace(/^[-–*]?\s*/, '').trim(),
-      });
-    }
-
-    parsed.push({
+    days.push({
       title: `Day ${dayNum}`,
-      parts,
+      parts: parts.length
+        ? parts
+        : [{ time: "All Day", text: body.replace(/\s*\*+$/g, "") }]
     });
   }
 
-  return parsed;
+  // на всякий случай отсортируем
+  days.sort(
+    (a, b) => Number(a.title.split(" ")[1]) - Number(b.title.split(" ")[1])
+  );
+  return days;
 }
 
+// --- parseTripSummary: чуть устойчивее граница Itinerary ---
+function parseTripSummary(text = "") {
+  const t = text.replace(/\r/g, "");
 
+  const destinationMatch = t.match(/\*\*Destination:\*\*\s*(.+)/i);
+  const datesMatch = t.match(/\*\*Dates:\*\*\s*(.+)/i);
+  const overviewMatch = t.match(/####\s*Overview\s*([\s\S]*?)(?:\n####|$)/i);
 
-function parseTripSummary(text) {
-  const destinationMatch = text.match(/\*\*Destination:\*\*\s*(.+)/i);
-  const datesMatch = text.match(/\*\*Dates:\*\*\s*(.+)/i);
-  const overviewMatch = text.match(/#### Overview\s*([\s\S]*?)####/i);
-
-  const highlightsMatch = text.match(/#### Highlights\s*([\s\S]*?)####/i);
+  const highlightsMatch = t.match(/####\s*Highlights\s*([\s\S]*?)(?:\n####|$)/i);
   const highlights = highlightsMatch
     ? highlightsMatch[1]
-        .split('\n')
-        .map(line => line.replace(/^[-*]\s*/, '').trim())
+        .split("\n")
+        .map((line) => line.replace(/^[-*]\s*/, "").trim())
         .filter(Boolean)
     : [];
 
-  const itineraryMatch = text.match(/#### Itinerary\s*([\s\S]*?)####?\s*(Return Trip|$)/i);
-  const itinerary = itineraryMatch
-    ? parseItineraryMarkdown(itineraryMatch[1])
-    : [];
+  // Берём всё между "#### Itinerary" и следующим заголовком/концом
+  const itineraryMatch = t.match(/####\s*Itinerary\s*([\s\S]*?)(?:\n####|$)/i);
+  const itinerary = itineraryMatch ? parseItineraryMarkdown(itineraryMatch[1]) : [];
 
   return {
     destination: destinationMatch?.[1]?.trim() || null,
     travel_dates: datesMatch?.[1]?.trim() || null,
-    overview: overviewMatch?.[1]?.trim() || '',
+    overview: overviewMatch?.[1]?.trim() || "",
     highlights,
-    itinerary,
+    itinerary
+  };
+}
+
+// --- Return Trip extractor (берёт текст между "#### Return Trip" и следующим заголовком/концом)
+function extractReturnTrip(markdown = "") {
+  const t = (markdown || "").replace(/\r/g, "");
+  const m = t.match(/####\s*Return\s*Trip\s*([\s\S]*?)(?=\n####|\n###|$)/i);
+  if (!m) return null;
+  const body = m[1].trim();
+
+  // попытаемся вытащить from/to из первого предложения "from X to Y"
+  const dir = body.match(/from\s+(.+?)\s+to\s+(.+?)([.,\n]|$)/i);
+  const fromCity = dir?.[1]?.trim() || null;
+  const toCity   = dir?.[2]?.trim() || null;
+
+  return {
+    raw: body,                     // полный текст секции
+    from: fromCity,
+    to: toCity
   };
 }
 
@@ -237,6 +262,17 @@ export default function ChatPanel() {
       const reply = data.reply;
 
       const parsed = parseTripSummary(reply);
+      // Return Trip -> transfers[]
+      const rt = extractReturnTrip(reply);
+      if (rt) {
+        parsed.transfers = [{
+          route: rt.from && rt.to ? `${rt.from} → ${rt.to}` : "Return Trip",
+          details: rt.raw
+        }];
+        // полезно сохранить и для API:
+        parsed.returnFrom = rt.from || null;
+        parsed.returnTo   = rt.to   || parsed.destination || null;
+}
 
       // --- Геокодинг: получаем координаты города назначения ---
       let cityCoord = null;

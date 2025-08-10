@@ -1,7 +1,8 @@
+// src/components/MobileMenu.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+import './MobileMenu.css';
 
-// Прокидываем все нужные пропсы
 function MobileMenu({
   user,
   goToPlanner,
@@ -9,9 +10,10 @@ function MobileMenu({
   onClose,
   isPremium,
   isAdmin,
-  isDark
+  isDark,
+  onToggleTheme,
+  isClosing,
 }) {
-  // Логотип для мобилки (можно показать наверху меню)
   let logoSrc = '/logo.png';
   if (isAdmin && isDark) logoSrc = '/admin_alt.png';
   else if (isAdmin) logoSrc = '/admin.png';
@@ -20,75 +22,88 @@ function MobileMenu({
   else if (isDark) logoSrc = '/logo_alt.png';
 
   return (
-    <div className={`mobile-dropdown shadow px-4 py-3 animate-slide-down position-absolute top-100 start-0 w-100 z-2 ${isDark ? 'bg-dark' : 'bg-white'}`}>
-      {/* Логотип и роль (не обязательно, по желанию) */}
-      <div className="d-flex align-items-center mb-3">
-        <img src={logoSrc} alt="Trip DVisor Logo" height="30" className="me-2" style={{ marginTop: '1px' }} />
-        {isAdmin && (
-          <span className="badge bg-danger ms-1" style={{ fontSize: '0.8rem' }}>Admin</span>
-        )}
-        {isPremium && !isAdmin && (
-          <span className="badge bg-primary ms-1" style={{ fontSize: '0.8rem' }}>Premium</span>
-        )}
+    <>
+      {/* Overlay */}
+      <div className="mm-overlay" onClick={onClose} />
+
+      {/* Sheet */}
+      <div className={`mm-sheet ${isClosing ? 'mm-closing' : 'mm-opening'}`}>
+        {/* Header */}
+        <div className="mm-header">
+          <div className="mm-brand">
+            <img src={logoSrc} alt="Trip DVisor" height="28" />
+            {isAdmin && <span className="mm-badge mm-badge-admin">Admin</span>}
+            {!isAdmin && isPremium && (
+              <span className="mm-badge mm-badge-premium">Premium</span>
+            )}
+          </div>
+
+          <div className="mm-actions">
+            <button
+              className="mm-icon-btn"
+              aria-label="Toggle theme"
+              onClick={onToggleTheme}
+              title="Toggle theme"
+            >
+              <i className={`bi ${isDark ? 'bi-moon-stars-fill' : 'bi-brightness-high'}`} />
+            </button>
+            <button className="mm-icon-btn" aria-label="Close" onClick={onClose} title="Close">
+              <i className="bi bi-x-lg" />
+            </button>
+          </div>
+        </div>
+
+        {/* Nav list */}
+        <nav className="mm-list">
+          <button
+            className="mm-item"
+            onClick={() => {
+              goToPlanner();
+              onClose();
+            }}
+          >
+            <i className="bi bi-robot mm-ico" />
+            <span>Planner</span>
+          </button>
+
+          <Link className="mm-item" to="/favorites" onClick={onClose}>
+            <i className="bi bi-heart mm-ico" />
+            <span>Favorites</span>
+          </Link>
+
+          {isAdmin && (
+            <Link className="mm-item mm-item-accent" to="/admin" onClick={onClose}>
+              <i className="bi bi-shield-lock mm-ico" />
+              <span>Admin Panel</span>
+            </Link>
+          )}
+
+          <div className="mm-sep" />
+
+          {user ? (
+            <>
+              <Link className="mm-item" to="/account" onClick={onClose}>
+                <i className="bi bi-person-circle mm-ico" />
+                <span>{user.username}</span>
+              </Link>
+              <button
+                className="mm-btn mm-btn-danger"
+                onClick={() => {
+                  handleLogout();
+                  onClose();
+                }}
+              >
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <Link className="mm-btn mm-btn-primary" to="/login" onClick={onClose}>
+              Sign In
+            </Link>
+          )}
+        </nav>
       </div>
-
-      {/* Навигация */}
-      <button
-        className={`btn btn-link nav-link text-start ${isDark ? 'text-light' : ''}`}
-        onClick={() => { goToPlanner(); onClose(); }}
-      >
-        <i className="bi bi-robot me-1" /> Planner
-      </button>
-
-      <Link
-        className={`nav-link text-start ${isDark ? 'text-light' : ''}`}
-        to="/favorites"
-        onClick={onClose}
-      >
-        <i className="bi bi-heart me-1" /> Favorites
-      </Link>
-
-      {/* Ссылка на админ-панель */}
-      {isAdmin && (
-        <Link
-          className={`nav-link text-start ${isDark ? 'text-warning' : 'text-danger'} fw-bold`}
-          to="/admin"
-          onClick={onClose}
-        >
-          <i className="bi bi-shield-lock me-1" /> Admin Panel
-        </Link>
-      )}
-
-      {/* Аккаунт пользователя */}
-      {user && user.username && (
-        <Link
-          className={`nav-link text-muted small ps-1 mt-1 ${isDark ? 'text-light' : ''}`}
-          to="/account"
-          onClick={onClose}
-          style={{ pointerEvents: 'auto' }}
-        >
-          <i className="bi bi-person-circle me-1" /> {user.username}
-        </Link>
-      )}
-
-      {/* Кнопки входа/выхода */}
-      {user ? (
-        <button
-          className="btn btn-outline-danger btn-sm mt-2"
-          onClick={() => { handleLogout(); onClose(); }}
-        >
-          Sign Out
-        </button>
-      ) : (
-        <Link
-          className="btn btn-outline-primary btn-sm mt-2"
-          to="/login"
-          onClick={onClose}
-        >
-          Sign In
-        </Link>
-      )}
-    </div>
+    </>
   );
 }
 
