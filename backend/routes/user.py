@@ -1,0 +1,101 @@
+# routes/user.py
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from db import get_db_connection
+from psycopg2.extras import RealDictCursor
+from models.userclass import UserDict
+from utils.notify import create_notification
+from utils.email_notify import send_email_notification
+
+
+
+user_bp = Blueprint("user", __name__, url_prefix="/api/user")
+
+@user_bp.route("/profile", methods=["GET"])
+@jwt_required()
+def get_profile():
+    username = get_jwt_identity()
+    conn = get_db_connection()
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute("""
+            SELECT id, username, email, role, is_2fa_enabled 
+            FROM users 
+            WHERE username = %s
+        """, (username,))
+        record = cur.fetchone()
+        if not record:
+            return jsonify(success=False, message="User not found"), 404
+
+        # Можно вернуть просто record, UserDict не нужен
+        return jsonify(success=True, user=record), 200
+
+
+@user_bp.route("/profile", methods=["PUT"])
+@jwt_required()
+def update_profile():
+    current_username = get_jwt_identity()
+    data = request.get_json()
+
+    new_username = data.get("username", "").strip()
+    new_email = data.get("email", "").strip()
+
+    if not new_username or not new_email:
+        return jsonify(success=False, message="Username and email are required"), 400
+
+    conn = get_db_connection()
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute("""
+            SELECT 1 FROM users 
+            WHERE (username = %s OR email = %s) AND username != %s
+        """, (new_username, new_email, current_username))
+        if cur.fetchone():
+            return jsonify(success=False, message="Username or email already taken"), 409
+
+        cur.execute("""
+            UPDATE users 
+            SET username = %s, email = %s 
+            WHERE username = %s
+        """, (new_username, new_email, current_username))
+        conn.commit()
+
+    return jsonify(success=True, message="Profile updated successfully"), 200
+
+
+@user_bp.route("/2fa/enable-disable", methods=["POST"])
+@jwt_required()
+def toggle_2fa():
+    username = get_jwt_identity()
+    data = request.get_json()
+    enable_2fa = data.get("enable_2fa")
+
+    if enable_2fa not in [True, False]:
+        return jsonify(success=False, message="Missing or invalid 'enable_2fa' (must be true/false)"), 400
+
+    try:
+        conn = get_db_connection()
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                UPDATE users 
+                SET is_2fa_enabled = %s 
+                WHERE username = %s
+            """, (enable_2fa, username))
+            conn.commit()
+            # получаем user_id по username
+            cur.execute("SELECT id FROM users WHERE username = %s", (username,))
+            user = cur.fetchone()
+            if user:
+                title = "2FA Enabled" if enable_2fa else "2FA Disabled"
+                message = "You have enabled two-factor authentication." if enable_2fa else "You have disabled two-factor authentication."
+                create_notification(user["id"], title, message)
+                send_email_notification(
+                    username=username,
+                    subject=title,
+                    message=message
+                )
+
+
+        return jsonify(success=True, message=f"2FA {'enabled' if enable_2fa else 'disabled'}"), 200
+
+    except Exception as e:
+        print("2FA toggle error:", str(e))
+        return jsonify(success=False, message="Server error while updating 2FA status"), 500

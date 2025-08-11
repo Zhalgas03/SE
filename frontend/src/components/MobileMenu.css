@@ -1,0 +1,117 @@
+/* src/components/MobileMenu.css */
+:root { --nav-h: 56px; }
+
+.mm-overlay{
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: saturate(120%) blur(2px);
+  z-index: 999;
+}
+
+/* sheet контейнер под навбаром */
+.mm-sheet{
+  position: fixed;
+  top: var(--nav-h); left: 0; right: 0;
+  background: var(--card-bg);
+  color: var(--text-color);
+  border-top: 1px solid var(--border-color);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -6px 24px rgba(0,0,0,.25);
+  z-index: 1000;
+  padding: 12px 14px 18px;
+  transform-origin: top center;
+  will-change: transform, opacity;
+}
+
+/* анимации */
+@keyframes mmIn { from {opacity:.0; transform: translateY(-8px)} to {opacity:1; transform: translateY(0)} }
+@keyframes mmOut{ from {opacity:1; transform: translateY(0)} to {opacity:.0; transform: translateY(-8px)} }
+
+.mm-opening{ animation: mmIn 180ms ease-out both; }
+.mm-closing{ animation: mmOut 160ms ease-in both; }
+
+.mm-header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 2px 2px 6px;
+}
+
+.mm-brand{
+  display:flex; align-items:center; gap:8px;
+}
+
+.mm-badge{
+  font-size:.75rem; font-weight:600; padding:2px 8px; border-radius:999px;
+  border:1px solid var(--border-color);
+}
+.mm-badge-admin{ color:#b45309; background: #fff3e0; border-color:#ffddae; }
+.mm-badge-premium{ color:#155e75; background:#e0f2fe; border-color:#bae6fd; }
+
+.mm-actions{ display:flex; align-items:center; gap:6px; }
+.mm-icon-btn{
+  border:none; background:transparent; color:var(--text-color);
+  width:36px; height:36px; border-radius:10px; display:grid; place-items:center;
+}
+.mm-icon-btn:active{ transform: scale(.98) }
+
+.mm-list{ display:flex; flex-direction:column; gap:6px; margin-top:6px; }
+
+/* универсальный пункт */
+.mm-item{
+  display:flex; align-items:center; gap:10px;
+  padding:12px 12px; border-radius:12px;
+  border:1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-color);
+  text-decoration:none;
+}
+.mm-item:active{ transform: translateY(1px) }
+.mm-item-accent{
+  border-color: #ffc10766;
+  background: color-mix(in srgb, var(--card-bg) 92%, #ffc107 8%);
+}
+
+.mm-ico{ font-size:1.1rem; opacity:.9 }
+
+/* разделитель */
+.mm-sep{ height:1px; background:var(--border-color); margin:8px 2px; border-radius:1px; }
+
+/* кнопки внизу */
+.mm-btn{
+  width:100%; padding:10px 14px; border-radius:12px; font-weight:600;
+  display:inline-flex; justify-content:center; align-items:center;
+  text-decoration:none; border:1px solid transparent;
+}
+.mm-btn-primary{
+  background: var(--btn-color); color:#fff; border-color: var(--btn-color);
+}
+.mm-btn-danger{
+  background: #dc3545; color:#fff; border-color:#dc3545;
+}
+
+/* не даём телепортиться на ПК */
+@media (min-width: 992px){
+  .mm-overlay, .mm-sheet{ display:none !important; }
+}
+/* было: top: var(--nav-h); border-radius: 16px 16px 0 0; */
+.mm-sheet{
+  position: fixed;
+  top: 0;                              /* ← с самого верха */
+  left: 0; right: 0;
+  background: var(--card-bg);
+  color: var(--text-color);
+  border-top: 1px solid var(--border-color);
+  border-radius: 0 0 16px 16px;        /* скругляем только низ */
+  box-shadow: 0 -6px 24px rgba(0,0,0,.25);
+  z-index: 1100;                       /* повыше navbar на всякий */
+  padding: 12px 14px 18px;
+
+  /* безопасная зона для вырезов/статус-бара + чуть воздуха */
+  padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
+
+  /* чтобы помещалось и скроллилось при низких экранах */
+  max-height: 100svh;
+  overflow-y: auto;
+
+  transform-origin: top center;
+  will-change: transform, opacity;
+}

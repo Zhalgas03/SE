@@ -1,0 +1,112 @@
+/* ===== VotePage theming (works with your global --vars) ===== */
+
+.vote-container {
+  display: flex;
+  width: 100%;
+  height: 100vh;           /* fallback */
+  min-height: 100dvh;      /* mobile-safe */
+  background: var(--bg-color);
+  color: var(--text-color);
+  overflow: hidden;
+}
+
+/* two panes */
+.vote-left,
+.vote-right {
+  width: 50%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 30px;
+  box-sizing: border-box;
+}
+
+/* left: main form */
+.vote-left {
+  background: var(--card-bg);
+  border-right: 1px solid var(--border-color);
+}
+
+/* right: context/preview */
+.vote-right {
+  /* чуть отличаем фон от левого блока */
+  background: var(--header-bg);
+}
+
+/* nice scrollbars in both panes (inherits your dark theme) */
+.vote-left::-webkit-scrollbar,
+.vote-right::-webkit-scrollbar {
+  width: 10px;
+}
+.vote-left::-webkit-scrollbar-thumb,
+.vote-right::-webkit-scrollbar-thumb {
+  background: rgba(120,120,120,.45);
+  border-radius: 6px;
+}
+.vote-left::-webkit-scrollbar-track,
+.vote-right::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Firefox scrollbar colors */
+.vote-left,
+.vote-right {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120,120,120,.45) transparent;
+}
+
+/* Responsive: stack panes on small screens (optional, but handy) */
+@media (max-width: 992px) {
+  .vote-container {
+    flex-direction: column;
+  }
+  .vote-left,
+  .vote-right {
+    width: 100%;
+    height: auto;
+    max-height: none;
+  }
+  .vote-right {
+    border-top: 1px solid var(--border-color);
+    border-right: none;
+  }
+}
+/* two panes */
+.vote-left,
+.vote-right {
+  width: 50%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 30px;          /* базовый отступ */
+  box-sizing: border-box;
+}
+
+/* left: main form */
+.vote-left {
+  background: var(--card-bg);
+  border-right: 1px solid var(--border-color);
+
+  /* центрируем контент и управляем отступами */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+
+  /* сначала схлопываются Л/П поля, потом уже карточка */
+  padding: 30px 0;                                /* убираем фикс. боковой отступ */
+  padding-inline: clamp(8px, 5vw, 48px);          /* ← этот сжимается первым */
+}
+
+/* right без изменений */
+.vote-right { background: var(--header-bg); }
+/* высота navbar (bootstrap по умолчанию 56px) */
+:root { --navbar-h: 60px; }
+
+/* VotePage: высота = 100dvh - navbar */
+.vote-container {
+  display: flex;
+  width: 100%;
+  height: calc(100dvh - var(--navbar-h));
+  min-height: calc(100dvh - var(--navbar-h));
+  background: var(--bg-color);
+  color: var(--text-color);
+  overflow: hidden;
+}
