@@ -11,6 +11,9 @@ from flask_dance.contrib.github import make_github_blueprint, github
 from routes.user import user_bp
 import os
 from dotenv import load_dotenv
+
+
+
 load_dotenv()
 
 from routes.session import session_bp
@@ -23,6 +26,9 @@ from flask import send_from_directory
 from routes.admin import admin_bp
 from api.transport import transport_bp
 from api.hotel import hotel_bp
+from routes.weekly_routes import weekly_bp
+from routes.weekly_optin import weekly_optin_bp
+
 
 
 
@@ -30,6 +36,15 @@ app = Flask(__name__)
 CORS(app, supports_credentials=True)
 app.config.from_object(Config)
 jwt = JWTManager(app)
+
+# ---- Email config (единый источник правды) ----
+email_sender = os.getenv("EMAIL_SENDER", "vperedmuslims@gmail.com")  # чистый адрес (логин)
+email_from = os.getenv("EMAIL_FROM", f"Trip DVisor <{email_sender}>") # display From
+app.config["EMAIL_FROM"] = email_from
+app.config["EMAIL_SENDER"] = email_sender
+app.config.setdefault("JWT_SECRET_KEY", os.getenv("JWT_SECRET_KEY", "dev-jwt"))
+# -----------------------------------------------
+
 
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -53,7 +68,7 @@ app.register_blueprint(hotel_bp)
 
 app.register_blueprint(reset_bp)
 
-
+app.register_blueprint(weekly_bp)
 
 
 app.register_blueprint(trips_bp)
@@ -68,6 +83,31 @@ app.register_blueprint(notifications_bp)
 app.register_blueprint(stripe_bp)
 
 app.register_blueprint(transport_bp)
+
+
+import click
+from api.weekly_job import run_weekly_dry_run, run_weekly_dispatch
+
+app.register_blueprint(weekly_optin_bp)
+
+@app.cli.command("weekly-dry-run")
+def weekly_dry_run_cmd():
+    """Generate offer and show preview URL & recipient count (no emails sent)."""
+    out = run_weekly_dry_run(app)
+    click.echo(out)
+
+@app.cli.command("weekly-send-one")
+@click.option("--email", required=True, help="Send Weekly to a single address.")
+def weekly_send_one_cmd(email):
+    """Send Weekly email to exactly one address (e2e test)."""
+    out = run_weekly_dispatch(app, only_email=email)
+    click.echo(out)
+
+@app.cli.command("weekly-run")
+def weekly_run_cmd():
+    """Send Weekly to all premium users with opt-in."""
+    out = run_weekly_dispatch(app)
+    click.echo(out)
 
 
 print("📍 Registered routes:")
