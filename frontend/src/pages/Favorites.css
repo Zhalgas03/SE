@@ -203,3 +203,5 @@ body.dark-theme .themed-modal .btn-close:hover { opacity: 1; }
 /* На всякий — не даём другим стилям перебить фон */
 .themed-modal .modal-body, 
 .themed-modal .modal-header { background: var(--card-bg) !important; }
+
+

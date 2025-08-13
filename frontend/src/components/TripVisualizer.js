@@ -6,7 +6,9 @@ import TripHeader from "./TripComponents/TripHeader";
 import TripOverview from "./TripComponents/TripOverview";
 import TripHighlights from "./TripComponents/TripHighlights";
 import TripItinerary from "./TripComponents/TripItinerary";
-import TripTransfer from "./TripComponents/TripTransfer";
+import TripTransfer from "./TripComponents/TripTransfer"; 
+import TripStay from "./TripComponents/TripStay";
+
 import { useTrip } from "../context/TripContext";
 
 function TripVisualizer() {
@@ -221,6 +223,7 @@ function TripVisualizer() {
         <TripHighlights summary={tripSummary} />
         <TripItinerary summary={tripSummary} isGeneratingPDF={isGeneratingPDF} />
         <TripTransfer summary={tripSummary} />
+  <TripStay summary={tripSummary} />
       </div>
     </div>
   );
