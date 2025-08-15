@@ -1,0 +1,44 @@
+/* src/styles/VoteRight.css */
+
+/* Колонка PDF целиком */
+.vote-right-pane {
+  height: 100%;
+  display: flex;
+}
+
+/* Прокрутка внутри, на всю высоту */
+.pdf-scroll {
+  flex: 1 1 auto;
+  height: 100%;
+  overflow: auto;
+}
+
+/* Если PdfViewer рендерит <iframe> или <embed> */
+.pdf-scroll iframe,
+.pdf-scroll embed {
+  width: 100% !important;
+  height: 100% !important;
+  border: 0;
+}
+
+/* Если используешь react-pdf (canvas внутрь) — растягиваем на ширину колонки */
+.react-pdf__Document {
+  width: 100%;
+}
+.react-pdf__Page {
+  width: 100% !important;
+  display: flex;
+  justify-content: center;     /* чтобы страница была по центру */
+}
+.react-pdf__Page__canvas {
+  width: 100% !important;      /* главное: fit-to-width */
+  height: auto !important;
+}
+
+/* На мобиле — тоже на всю высоту экрана */
+@media (max-width: 768px) {
+  .vote-right-pane,
+  .pdf-scroll {
+    height: 100dvh;            /* безопасная высота на мобильниках */
+  }
+}

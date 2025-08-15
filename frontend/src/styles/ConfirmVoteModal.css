@@ -126,3 +126,39 @@ body.dark-theme {
   outline: 2px solid var(--btn-color, #0d6efd);
   outline-offset: 2px;
 }
+/* Кнопки при загрузке */
+.btn-cancel[disabled],
+.btn-vote[disabled] {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Визуальная подсветка фоновой загрузки */
+.modal-overlay[aria-busy="true"] {
+  cursor: progress;
+}
+
+/* Спиннер */
+.spinner {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  vertical-align: -3px;
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Немного места для спиннера внутри кнопки */
+.btn-vote.is-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}

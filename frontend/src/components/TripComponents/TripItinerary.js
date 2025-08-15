@@ -24,7 +24,7 @@ const timeStyles = {
 
 function TimeBadge({ time }) {
   const style = { ...timeStyles.base, ...timeStyles[time] };
-  return <span style={style}>{time}</span>;
+  return <span className="time-badge" style={style}>{time}</span>;
 }
 
 function TripItinerary({ summary, isGeneratingPDF }) {
@@ -39,19 +39,20 @@ function TripItinerary({ summary, isGeneratingPDF }) {
   };
 
   return (
-    <Card className="mb-4 shadow-sm" style={{ overflow: 'visible' }}>
+    <Card className="mb-4 shadow-sm trip-card it-card" style={{ overflow: 'visible' }}>
       <Card.Body>
         <h5 className="fw-bold mb-3">Itinerary</h5>
 
-        {intro && <p>{intro}</p>}
+        {intro && <p className="it-intro">{intro}</p>}
 
         {!isGeneratingPDF && coordinates.length > 0 && (
-          <div className="rounded-3" style={{ height: '260px', marginBottom: '2.5rem' }}>
+          <div className="rounded-3 it-map" style={{ height: '260px' }}>
             <MapPreview coordinates={coordinates} />
           </div>
         )}
 
         {itinerary.length > 0 ? (
+          <div className="it-acc">
           <Accordion activeKey={activeKey}>
             {itinerary.map((day, i) => (
               <Accordion.Item
@@ -63,8 +64,8 @@ function TripItinerary({ summary, isGeneratingPDF }) {
                 <Accordion.Body>
                   {Array.isArray(day.parts) && day.parts.length > 0 ? (
                     day.parts.map((part, idx) => (
-                      <div key={idx} className="d-flex mb-3">
-                        <div style={{ marginRight: '25px' }}>
+                      <div key={idx} className="d-flex mb-3 it-part">
+                        <div className="it-left" style={{ marginRight: '25px' }}>
                           <TimeBadge time={part.time} />
                         </div>
                         <div style={{ flex: 1 }}>{part.text}</div>
@@ -77,6 +78,7 @@ function TripItinerary({ summary, isGeneratingPDF }) {
               </Accordion.Item>
             ))}
           </Accordion>
+          </div>
         ) : (
           <p className="text-muted">No itinerary available.</p>
         )}

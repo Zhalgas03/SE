@@ -129,7 +129,7 @@ function CreateVotingModal({ open, onClose, trip, origin }) {
             />
           </div>
           <div>
-            <label className="modal-label">Expected Votes</label>
+            <label className="modal-label">Votes</label>
             <input
               type="number"
               className="modal-input"

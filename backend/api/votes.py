@@ -275,6 +275,7 @@ def submit_vote():
 
 
 @votes_bp.route("/results/<share_link>", methods=["GET"])
+@votes_bp.route("/results/<share_link>", methods=["GET"])
 def get_voting_results(share_link):
     print("🔍 Requested share_link:", share_link)
 
@@ -284,26 +285,26 @@ def get_voting_results(share_link):
     except:
         current_user = None
 
+    base_url = request.host_url.rstrip("/")  # напр. http://localhost:5001
     conn = get_db_connection()
     with conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Получаем voting session
+            # 1) сессия + pdf из trips
             cur.execute("""
                 SELECT vs.id, vs.trip_id, vs.rules, vs.status, vs.completed_at,
-                       vs.expires_at, vs.title, vs.description
+                       vs.expires_at, vs.title, vs.description,
+                       t.name AS trip_name, t.pdf_file_path
                 FROM voting_sessions vs
+                LEFT JOIN trips t ON t.id = vs.trip_id
                 WHERE vs.share_link = %s
             """, (share_link,))
             session = cur.fetchone()
-
             if not session:
                 return jsonify(success=False, message="Voting session not found"), 404
 
-            # Считаем голоса
+            # 2) голоса
             cur.execute("""
-                SELECT
-                    v.id, v.value, v.comment, v.created_at,
-                    u.username
+                SELECT v.id, v.value, v.comment, v.created_at, u.username
                 FROM votes v
                 LEFT JOIN users u ON v.user_id = u.id
                 WHERE v.voting_session_id = %s
@@ -313,18 +314,12 @@ def get_voting_results(share_link):
 
             votes_for = sum(1 for v in votes if v["value"] == 1)
             votes_against = sum(1 for v in votes if v["value"] == 0)
-            counts = {
-                "total": len(votes),
-                "for": votes_for,
-                "against": votes_against
-            }
+            counts = {"total": len(votes), "for": votes_for, "against": votes_against}
 
-            # Получаем комментарии
+            # 3) комментарии
             cur.execute("""
-                SELECT 
-                    COALESCE(u.username, 'Anonymous') AS username,
-                    comment,
-                    v.created_at
+                SELECT COALESCE(u.username, 'Anonymous') AS username,
+                       comment, v.created_at
                 FROM votes v
                 LEFT JOIN users u ON v.user_id = u.id
                 WHERE v.voting_session_id = %s AND comment IS NOT NULL
@@ -332,18 +327,29 @@ def get_voting_results(share_link):
             """, (session["id"],))
             comments = cur.fetchall()
 
-            # Проверка: проголосовал ли текущий пользователь
-            voted = False
+            # 4) я голосовал? и чем
+            you_voted = False
+            your_vote_value = None
             if current_user:
                 cur.execute("SELECT id FROM users WHERE username = %s", (current_user,))
                 row = cur.fetchone()
                 if row:
                     user_id = row["id"]
                     cur.execute("""
-                        SELECT 1 FROM votes 
+                        SELECT value
+                        FROM votes
                         WHERE voting_session_id = %s AND user_id = %s
+                        ORDER BY created_at DESC
+                        LIMIT 1
                     """, (session["id"], user_id))
-                    voted = bool(cur.fetchone())
+                    v = cur.fetchone()
+                    if v:
+                        you_voted = True
+                        your_vote_value = v["value"]
+
+            # 5) pdf
+            pdf_path = session.get("pdf_file_path")
+            pdf_url = f"{base_url}/{pdf_path}" if pdf_path else None
 
             response = {
                 "success": True,
@@ -355,11 +361,18 @@ def get_voting_results(share_link):
                 "completed_at": session["completed_at"],
                 "counts": counts,
                 "comments": comments,
-                "you_voted": voted
+                "you_voted": you_voted,
+                "your_vote_value": your_vote_value,
+                "trip": {
+                    "id": session["trip_id"],
+                    "name": session.get("trip_name"),
+                    "pdf_file_path": pdf_path,
+                    "pdf_url": pdf_url,
+                },
             }
-        
 
     return jsonify(response), 200
+
 
 
 @votes_bp.route("/close-expired", methods=["POST"])

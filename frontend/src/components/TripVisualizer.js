@@ -10,6 +10,7 @@ import TripTransfer from "./TripComponents/TripTransfer";
 import TripStay from "./TripComponents/TripStay";
 
 import { useTrip } from "../context/TripContext";
+import "../styles/trip-mobile.css";
 
 function TripVisualizer() {
   const { tripSummary } = useTrip();
@@ -196,7 +197,7 @@ function TripVisualizer() {
   }
 
   return (
-    <div className="trip-visualizer-container px-4 py-4 rounded-4">
+    <div className="trip-visualizer-container rounded-4 tripv">
       <div className="d-flex justify-content-end align-items-center gap-3 mb-3">
         <button
           className="btn btn-outline-secondary"

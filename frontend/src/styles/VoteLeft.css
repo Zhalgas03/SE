@@ -291,3 +291,62 @@ body.dark-theme .vote-error-text {
   border: 1px solid var(--vote-border);
   box-sizing: border-box;
 }
+/* ===== Mobile: full‑width card + better buttons ===== */
+@media (max-width: 768px) {
+  /* Карточка на всю ширину (перекрываем твой width:680px) */
+  .vote-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 34px 34px 88px !important; 
+    border-radius: 12px;
+  }
+
+  /* Панель кнопок «прилипает» к низу карточки */
+  .vote-buttons {
+    position: sticky;
+    bottom: 0;
+    left: 0; right: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;   /* две равные кнопки в ряд */
+    gap: 10px;
+    padding: 10px;
+    margin: 0 -14px -14px;            /* фон панели на всю ширину карточки */
+    background: var(--vote-card-bg);
+    border-top: 1px solid var(--vote-border);
+    box-shadow: 0 -8px 24px rgba(0,0,0,.08);
+    z-index: 2;
+  }
+
+  /* На совсем узких экранах кнопки в столбик */
+  @media (max-width: 360px) {
+    .vote-buttons { grid-template-columns: 1fr; }
+  }
+
+  /* Сами кнопки — большие, удобные, с актив/фокус эффектами */
+  .vote-button {
+    height: 50px;
+    width: 100%;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: .2px;
+    transition: transform .08s ease, filter .15s ease, box-shadow .15s ease;
+    box-shadow: 0 6px 14px rgba(0,0,0,.08);
+  }
+  .vote-button:active { transform: translateY(1px) scale(.99); }
+  .vote-button:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--vote-primary, #3b82f6) 70%, transparent);
+    outline-offset: 2px;
+  }
+
+  /* Цвета/градиенты (можно убрать градиент, если не нравится) */
+  .vote-button-for {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--vote-success) 92%, white) 0%, var(--vote-success) 100%);
+  }
+  .vote-button-for:hover { filter: brightness(1.03); }
+
+  .vote-button-against {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--vote-danger) 92%, white) 0%, var(--vote-danger) 100%);
+  }
+  .vote-button-against:hover { filter: brightness(1.03); }
+}

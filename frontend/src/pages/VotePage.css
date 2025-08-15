@@ -1,106 +1,11 @@
-/* ===== VotePage theming (works with your global --vars) ===== */
-
-.vote-container {
-  display: flex;
-  width: 100%;
-  height: 100vh;           /* fallback */
-  min-height: 100dvh;      /* mobile-safe */
-  background: var(--bg-color);
-  color: var(--text-color);
-  overflow: hidden;
+/* ===== VotePage base ===== */
+:root {
+  --navbar-h: 60px;           /* если есть app navbar */
+  --app-header-h: 56px;       /* высота верхнего brand/header как в planner */
+  --mobile-tabbar-h: 44px;  
+    /* высота сегмент‑контрола */
 }
 
-/* two panes */
-.vote-left,
-.vote-right {
-  width: 50%;
-  height: 100%;
-  overflow-y: auto;
-  padding: 30px;
-  box-sizing: border-box;
-}
-
-/* left: main form */
-.vote-left {
-  background: var(--card-bg);
-  border-right: 1px solid var(--border-color);
-}
-
-/* right: context/preview */
-.vote-right {
-  /* чуть отличаем фон от левого блока */
-  background: var(--header-bg);
-}
-
-/* nice scrollbars in both panes (inherits your dark theme) */
-.vote-left::-webkit-scrollbar,
-.vote-right::-webkit-scrollbar {
-  width: 10px;
-}
-.vote-left::-webkit-scrollbar-thumb,
-.vote-right::-webkit-scrollbar-thumb {
-  background: rgba(120,120,120,.45);
-  border-radius: 6px;
-}
-.vote-left::-webkit-scrollbar-track,
-.vote-right::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* Firefox scrollbar colors */
-.vote-left,
-.vote-right {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(120,120,120,.45) transparent;
-}
-
-/* Responsive: stack panes on small screens (optional, but handy) */
-@media (max-width: 992px) {
-  .vote-container {
-    flex-direction: column;
-  }
-  .vote-left,
-  .vote-right {
-    width: 100%;
-    height: auto;
-    max-height: none;
-  }
-  .vote-right {
-    border-top: 1px solid var(--border-color);
-    border-right: none;
-  }
-}
-/* two panes */
-.vote-left,
-.vote-right {
-  width: 50%;
-  height: 100%;
-  overflow-y: auto;
-  padding: 30px;          /* базовый отступ */
-  box-sizing: border-box;
-}
-
-/* left: main form */
-.vote-left {
-  background: var(--card-bg);
-  border-right: 1px solid var(--border-color);
-
-  /* центрируем контент и управляем отступами */
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-
-  /* сначала схлопываются Л/П поля, потом уже карточка */
-  padding: 30px 0;                                /* убираем фикс. боковой отступ */
-  padding-inline: clamp(8px, 5vw, 48px);          /* ← этот сжимается первым */
-}
-
-/* right без изменений */
-.vote-right { background: var(--header-bg); }
-/* высота navbar (bootstrap по умолчанию 56px) */
-:root { --navbar-h: 60px; }
-
-/* VotePage: высота = 100dvh - navbar */
 .vote-container {
   display: flex;
   width: 100%;
@@ -109,4 +14,126 @@
   background: var(--bg-color);
   color: var(--text-color);
   overflow: hidden;
+}
+
+/* two panes (desktop) */
+.vote-left,
+.vote-right {
+  width: 50%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 30px 0;
+  padding-inline: clamp(8px, 5vw, 48px);
+  box-sizing: border-box;
+}
+
+.vote-left {
+  background: var(--card-bg);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.vote-right {
+  background: var(--header-bg);
+}
+
+/* scrollbars */
+.vote-left::-webkit-scrollbar,
+.vote-right::-webkit-scrollbar { width: 10px; }
+.vote-left::-webkit-scrollbar-thumb,
+.vote-right::-webkit-scrollbar-thumb { background: rgba(120,120,120,.45); border-radius: 6px; }
+.vote-left, .vote-right { scrollbar-width: thin; scrollbar-color: rgba(120,120,120,.45) transparent; }
+
+/* ===== Mobile: stack + Planner-like tabs ===== */
+.vote-container.vote-container--mobile { flex-direction: column; }
+
+@media (max-width: 992px) {
+  .vote-mobile-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    height: var(--mobile-tabbar-h);
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  /* segmented control style, like planner */
+  .vote-tab {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-color);
+    border-radius: 8px;         /* pill */
+    font-weight: 700;
+    font-size: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease;
+  }
+
+  .vote-tab:is(:hover, :focus-visible) {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #3b82f6) 30%, transparent);
+    outline: none;
+  }
+
+  .vote-tab.is-active {
+    background: var(--primary, #3b82f6);
+    border-color: var(--primary, #3b82f6);
+    color: #fff;
+  }
+
+  /* Контент на всю доступную высоту под табами и под app‑header */
+  .vote-mobile-content {
+    height: calc(100dvh - var(--app-header-h) - var(--mobile-tabbar-h));
+    min-height: calc(100dvh - var(--app-header-h) - var(--mobile-tabbar-h));
+    overflow: hidden;
+    display: grid;
+  }
+
+  .vote-left--mobile,
+  .vote-right--mobile {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 12px;
+    box-sizing: border-box;
+  }
+
+  .pdf-pane { height: 100%; }
+}
+/* базовая заливка для экрана загрузки */
+.vote-loading {
+  min-height: 60vh;
+  color: var(--text-color);
+  background: var(--bg-color);
+}
+
+/* мобильная страница — используем bootstrap отступы/тени/бордеры из JSX */
+.vote-mobile-page .btn-group .btn.active {
+  color: #fff;
+}
+
+/* десктоп: просто даём высоту, чтобы колонки красиво скроллились */
+.vote-desktop {
+  height: calc(100vh - 64px); /* при желании подстрой под высоту верхнего navbar */
+  min-height: 600px;
+}
+
+.vote-desktop > .overflow-auto::-webkit-scrollbar {
+  width: 10px;
+}
+.vote-desktop > .overflow-auto::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 120, 0.45);
+  border-radius: 6px;
+}
+.vote-desktop > .overflow-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 120, 120, 0.45) transparent;
 }

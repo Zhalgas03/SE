@@ -140,6 +140,7 @@ function Navbar() {
           isPremium={isPremium}
           isAdmin={isAdmin}
           isDark={isDark}
+          onToggleTheme={handleToggleTheme}
         />
       )}
     </div>

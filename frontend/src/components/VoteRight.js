@@ -1,23 +1,18 @@
+// src/components/VoteRight.jsx
 import React from "react";
+import PdfViewer from "./PdfViewer";
+import "../styles/VoteRight.css";  // <— добавили
 
-function VoteRight() {
+export default function VoteRight({ pdfUrl }) {
   return (
-    <div style={{
-      height: "100%",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      textAlign: "center",
-    }}>
-      <h2 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "16px" }}>
-        📄 PDF Preview
-      </h2>
-      <p style={{ color: "#777", fontStyle: "italic" }}>
-        No preview available yet.
-      </p>
+    <div className="vote-right-pane">
+      {pdfUrl ? (
+        <div className="pdf-scroll">
+          <PdfViewer url={pdfUrl} />
+        </div>
+      ) : (
+        <div className="text-muted">No PDF attached for this voting session.</div>
+      )}
     </div>
   );
 }
-
-export default VoteRight;

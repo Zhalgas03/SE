@@ -34,10 +34,10 @@ function TripHeader({ summary }) {
   const displayTags = Array.isArray(tags) && tags.length > 0 ? tags : defaultTags;
 
   return (
-    <div className="d-flex justify-content-between align-items-start mb-4">
+    <div className="d-flex justify-content-between align-items-start mb-4 trip-header">
       <div>
         <h2 className="fw-bold">{title}</h2>
-        <div className="mb-2 text-muted">{displayDates}</div>
+        <div className="mb-2 text-muted date">{displayDates}</div>
         <div>
           {displayTags.map((tag, i) => (
             <span key={i} className="badge bg-primary me-2">{tag}</span>

@@ -264,7 +264,7 @@ export default function TripTransfer({ summary }) {
             </div>
           </div>
 
-          <div className="omio-right">
+          <div className="omio-right text-start text-sm-end">
             <div className="omio-price">
               {o.price?.amount != null ? `${o.price.amount} ${o.price.currency}` : (isCar ? "" : "—")}
             </div>
@@ -330,35 +330,56 @@ export default function TripTransfer({ summary }) {
 
       {/* minimal Omio-like styles + header */}
       <style>{`
-        .omio-card{
-          border:1px solid rgba(0,0,0,.08);
-          border-radius:12px;
-          background:#fff;
-        }
-        .omio-head{
-          display:flex; align-items:center; justify-content:space-between;
-          gap:12px; padding:10px 14px;
-          border-bottom:1px solid #eef1f4; background:#fafbfd; border-top-left-radius:12px; border-top-right-radius:12px;
-        }
-        .omio-airline{ font-weight:700; font-size:14px; }
-        .omio-operated{ font-size:12px; color:#6b7280; }
+  .omio-card{
+    border:1px solid rgba(0,0,0,.08);
+    border-radius:12px;
+    background:#fff;
+  }
+  .omio-head{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px; padding:10px 14px;
+    border-bottom:1px solid #eef1f4; background:#fafbfd;
+    border-top-left-radius:12px; border-top-right-radius:12px;
+  }
+  .omio-airline{ font-weight:700; font-size:14px; }
+  .omio-operated{ font-size:12px; color:#6b7280; }
 
-        .omio-row{
-          display:flex; align-items:center; gap:12px; padding:12px 14px;
-        }
-        .omio-left{ width:44px; display:flex; justify-content:center; }
-        .omio-mid{ flex:1; min-width:0; }
-        .omio-times{ font-weight:700; display:flex; align-items:center; gap:8px; }
-        .omio-time{ font-size:16px; }
-        .omio-dur{ font-size:12px; color:#6b7280; }
-        .omio-sub{ font-size:12px; color:#6b7280; display:flex; align-items:center; gap:6px; margin-top:2px; }
-        .omio-badge{ background:#eef2ff; color:#4338ca; border-radius:999px; padding:2px 8px; font-size:11px; }
-        .omio-right{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; min-width:120px; }
-        .omio-price{ font-size:18px; font-weight:800; }
-        .omio-cta{ font-size:12px; font-weight:600; text-decoration:none; border:1px solid #d1d5db; padding:6px 10px; border-radius:8px; }
-        .omio-cta:hover{ background:#f9fafb; }
-        .omio-cta.disabled{ opacity:.6; pointer-events:none; }
-      `}</style>
+  .omio-row{
+    display:flex; align-items:center; gap:12px; padding:12px 14px;
+  }
+  .omio-left{ width:44px; display:flex; justify-content:center; }
+  .omio-mid{ flex:1; min-width:0; }              /* важное: можно сжимать середину */
+  .omio-times{ font-weight:700; display:flex; align-items:center; gap:8px; }
+  .omio-time{ font-size:16px; }
+  .omio-dur{ font-size:12px; color:#6b7280; }
+  .omio-sub{ font-size:12px; color:#6b7280; display:flex; align-items:center; gap:6px; margin-top:2px; flex-wrap:wrap; }
+  .omio-badge{ background:#eef2ff; color:#4338ca; border-radius:999px; padding:2px 8px; font-size:11px; }
+
+  .omio-right{
+    display:flex; flex-direction:column; align-items:flex-end; gap:6px;
+    min-width:120px;                               /* десктоп оставляем */
+  }
+  .omio-price{ font-size:18px; font-weight:800; }
+  .omio-cta{ font-size:12px; font-weight:600; text-decoration:none; border:1px solid #d1d5db; padding:6px 10px; border-radius:8px; }
+  .omio-cta:hover{ background:#f9fafb; }
+  .omio-cta.disabled{ opacity:.6; pointer-events:none; }
+
+  /* ---- MOBILE FIX ---- */
+  @media (max-width: 576px){
+    .omio-row{ padding:10px 12px; flex-wrap:wrap; }   /* позволяем перенос */
+    .omio-left{ width:28px; }                         /* компактнее иконка */
+    .omio-right{
+      min-width:0; width:100%;                        /* больше не душим центр */
+      flex-direction:row; align-items:center; justify-content:space-between;
+      margin-top:6px;                                  /* вторая строка */
+    }
+    .omio-price{ font-size:16px; }
+    .omio-cta{ padding:6px 8px; }
+    .omio-times{ gap:6px; }
+    .omio-time{ font-size:14px; }
+  }
+`}</style>
+
     </Card>
   );
 }

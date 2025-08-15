@@ -306,11 +306,11 @@ export default function TripStay({ summary }) {
               const hasGeo = o.geo?.lat && o.geo?.lon;
 
               return (
-                <div key={o.hotel_id || `${o.name || "Hotel"}-${i}`} className="col-12 col-sm-6 col-md-4">
-                  <div className="border rounded-3 p-2 h-100">
+                <div key={o.hotel_id || `${o.name || "Hotel"}-${i}`} className="col-12 col-sm-6 col-md-4 hotel-col">
+                  <div className="border rounded-3 p-2 h-100 hotel-card">
                     {/* верх: название + рейтинг + МАЛЕНЬКАЯ цена за ночь */}
                     <div className="d-flex justify-content-between align-items-start">
-                      <div className="fw-semibold">{o.name || "Hotel"}</div>
+                      <div className="fw-semibold hotel-name">{o.name || "Hotel"}</div>
                       <div className="text-end">
                         <div className="small text-muted">
                           {perNightPrice != null ? `≈ ${perNightPrice} ${curr} / night` : "—"}
@@ -339,7 +339,7 @@ export default function TripStay({ summary }) {
 
                     {/* низ: БОЛЬШАЯ TOTAL */}
                     <div className="mt-2">
-                      <div className="fs-5 fw-bold">
+                      <div className="fs-5 fw-bold hotel-total">
                         {total != null ? `${total} ${curr}` : "—"}
                         <span className="fw-normal text-muted ms-2">total</span>
                       </div>

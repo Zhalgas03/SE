@@ -1,48 +1,28 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState } from "react";
 import PdfViewer from "./PdfViewer";
 import CreateVotingModal from "./CreateVotingModal";
-import "../pages/Favorites.css"; // если CSS лежит там же, можно поправить путь
+import "../pages/Favorites.css";
 
 const PAGE_SIZE = 6;
 
-export default function SavedTrips({ apiBase = "http://localhost:5001" }) {
-  const [trips, setTrips] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function SavedTrips({
+  apiBase = "http://localhost:5001",
+  trips = [],                 // ✔ приходит сверху
+  setTrips,                   // ✔ чтобы убирать удалённые локально
+  loading = false,            // ✔ состояние загрузки из родителя
+  onRefresh,                  // ✔ рефреш с сервера
+}) {
   const [selectedPdf, setSelectedPdf] = useState(null);
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [origin, setOrigin] = useState({ x: 0, y: 0 });
   const [page, setPage] = useState(1);
-
-  const fetchTrips = useCallback(async () => {
-    try {
-      const res = await fetch(`${apiBase}/api/trips/favorites`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      const data = await res.json();
-      if (data.success) {
-        const filtered = (data.trips || []).filter((trip) => trip.pdf_file_path);
-        setTrips(filtered);
-      } else {
-        alert("Failed to load trips.");
-      }
-    } catch (err) {
-      console.error("Error fetching trips:", err);
-      alert("Server error.");
-    } finally {
-      setLoading(false);
-    }
-  }, [apiBase]);
-
-  useEffect(() => { fetchTrips(); }, [fetchTrips]);
 
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(trips.length / PAGE_SIZE)),
     [trips.length]
   );
 
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [totalPages, page]);
+  if (page > totalPages) setTimeout(() => setPage(totalPages), 0);
 
   const pagedTrips = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
@@ -54,16 +34,14 @@ export default function SavedTrips({ apiBase = "http://localhost:5001" }) {
     try {
       const res = await fetch(`${apiBase}/api/trips/${tripId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
       });
       const data = await res.json();
       if (data.success) {
-        setTrips((prev) => {
-          const next = prev.filter((t) => t.id !== tripId);
-          const newTotalPages = Math.max(1, Math.ceil(next.length / PAGE_SIZE));
-          if (page > newTotalPages) setPage(newTotalPages);
-          return next;
-        });
+        // локально снём
+        setTrips?.((prev) => prev.filter((t) => t.id !== tripId));
+        // и подстрахуемся актуализацией
+        onRefresh?.();
         setSelectedPdf(null);
       } else {
         alert("Failed to delete trip.");
@@ -75,47 +53,31 @@ export default function SavedTrips({ apiBase = "http://localhost:5001" }) {
   };
 
   const Pagination = () => {
-    if (totalPages <= 1) return null;
     const pages = [];
     const push = (n) => pages.push(n);
     const addRange = (a, b) => { for (let i = a; i <= b; i++) push(i); };
-
-    if (totalPages <= 7) {
-      addRange(1, totalPages);
-    } else {
+    if (totalPages <= 7) addRange(1, totalPages);
+    else {
       const left = Math.max(2, page - 1);
       const right = Math.min(totalPages - 1, page + 1);
-      push(1);
-      if (left > 2) push("…");
-      addRange(left, right);
-      if (right < totalPages - 1) push("…");
-      push(totalPages);
+      push(1); if (left > 2) push("…"); addRange(left, right);
+      if (right < totalPages - 1) push("…"); push(totalPages);
     }
-
+    if (totalPages <= 1) return null;
     return (
       <nav className="d-flex justify-content-center fav-pagination">
         <ul className="pagination mb-0">
           <li className={`page-item ${page === 1 ? "disabled" : ""}`}>
-            <button className="page-link" onClick={() => setPage((p) => Math.max(1, p - 1))}>
-              ‹ Prev
-            </button>
+            <button className="page-link" onClick={() => setPage((p) => Math.max(1, p - 1))}>‹ Prev</button>
           </li>
           {pages.map((p, idx) => (
-            <li
-              key={idx}
-              className={`page-item ${p === page ? "active" : ""} ${p === "…" ? "disabled" : ""}`}
-            >
-              {p === "…" ? (
-                <span className="page-link">…</span>
-              ) : (
-                <button className="page-link" onClick={() => setPage(p)}>{p}</button>
-              )}
+            <li key={idx} className={`page-item ${p === page ? "active" : ""} ${p === "…" ? "disabled" : ""}`}>
+              {p === "…" ? <span className="page-link">…</span> :
+                <button className="page-link" onClick={() => setPage(p)}>{p}</button>}
             </li>
           ))}
           <li className={`page-item ${page === totalPages ? "disabled" : ""}`}>
-            <button className="page-link" onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
-              Next ›
-            </button>
+            <button className="page-link" onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Next ›</button>
           </li>
         </ul>
       </nav>
@@ -156,19 +118,17 @@ export default function SavedTrips({ apiBase = "http://localhost:5001" }) {
                     >
                       📄 View
                     </button>
-
                     <div className="d-flex gap-2">
-                      <button
-                        className="btn btn-outline-secondary btn-sm"
-                        onClick={(e) => {
-                          const rect = e.target.getBoundingClientRect();
-                          setOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
-                          setSelectedTrip(trip);
-                        }}
-                      >
-                        🗳 Create poll
-                      </button>
-
+<button
+  className="btn btn-outline-secondary btn-sm"
+  onClick={(e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+    setSelectedTrip(trip); // ← ЭТО ГЛАВНОЕ
+  }}
+>
+  🗳 Create poll
+</button>
                       <button
                         className="btn btn-outline-danger btn-sm ms-2"
                         onClick={() => handleDelete(trip.id)}
@@ -216,7 +176,6 @@ export default function SavedTrips({ apiBase = "http://localhost:5001" }) {
                   <button type="button" className="btn-close" onClick={() => setSelectedPdf(null)} />
                 </div>
               </div>
-
               <div className="modal-body" style={{ maxHeight: "80vh", overflowY: "auto", padding: "1rem" }}>
                 <div className="w-100">
                   <PdfViewer url={selectedPdf} />

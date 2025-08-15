@@ -17,43 +17,49 @@ export default function PdfViewer({
   const clear = (node) => { while (node.firstChild) node.removeChild(node.firstChild); };
 
   const renderAllPages = async () => {
-    const container = containerRef.current;
-    const pdf = pdfRef.current;
-    if (!container || !pdf) return;
+  const container = containerRef.current;
+  const pdf = pdfRef.current;
+  if (!container || !pdf) return;
 
-    clear(container);
+  clear(container);
 
-    const innerWidth = Math.max(0, Math.floor(container.clientWidth));
-    lastWidthRef.current = innerWidth;
+  const innerWidth = Math.max(0, Math.floor(container.clientWidth));
+  lastWidthRef.current = innerWidth;
 
-    const dpr = window.devicePixelRatio || 1;
+  const dpr = window.devicePixelRatio || 1;
 
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const base = page.getViewport({ scale: 1 });
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
 
-      // базовый масштаб = больше из 1.5 или подгонки по ширине
-      const targetScale = Math.max(1.5, (innerWidth / base.width));
-      const viewport = page.getViewport({ scale: targetScale });
+    // исходный viewport при масштабе 1
+    const base = page.getViewport({ scale: 1 });
 
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
+    // масштаб подгоняем только по ширине — высота сохранит пропорцию
+    const targetScale = innerWidth / base.width;
+    const viewport = page.getViewport({ scale: targetScale });
 
-      canvas.width = Math.ceil(viewport.width * dpr);
-      canvas.height = Math.ceil(viewport.height * dpr);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
 
-      canvas.style.width = `${viewport.width}px`;
-      canvas.style.height = `${viewport.height}px`;
-      canvas.style.display = "block";
-      canvas.style.margin = "0 auto";
-      canvas.style.background = "#fff";
+    // физический размер канваса с учётом DPR
+    canvas.width = Math.ceil(viewport.width * dpr);
+    canvas.height = Math.ceil(viewport.height * dpr);
 
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // CSS-размер (логические пиксели)
+    canvas.style.width = `${viewport.width}px`;
+    canvas.style.height = `${viewport.height}px`;
+    canvas.style.display = "block";
+    canvas.style.margin = "0 auto";
+    canvas.style.background = "#fff";
+    canvas.style.maxWidth = "100%";
 
-      await page.render({ canvasContext: ctx, viewport }).promise;
-      container.appendChild(canvas);
-    }
-  };
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    container.appendChild(canvas);
+  }
+};
+
 
   const attachObserver = () => {
     if (!containerRef.current) return;
