@@ -8,7 +8,6 @@ import Register from './components/Register';
 import AuthLayout from './layouts/AuthLayout';
 import HomePage from './pages/HomePage';
 import PlannerPage from './pages/PlannerPage';
-import GoogleCallback from './components/GoogleCallback';
 import AccountPage from './pages/AccountPage';
 import LoginSuccess from './pages/LoginSuccess';
 import ForgotPassword from './components/ForgotPassword';
@@ -18,7 +17,7 @@ import Cancel from './pages/Cancel';
 import Favorites from './pages/Favorites';
 import { TripProvider } from './context/TripContext';
 import VotePage from './pages/VotePage';
-import AdminPanelPage from './pages/AdminPanelPage.js'; // ✅ добавлено
+import AdminPanelPage from './pages/AdminPanelPage.js'; 
 
 function AppContent() {
   const location = useLocation();
@@ -41,7 +40,6 @@ function AppContent() {
 
         <Route path="/" element={<HomePage />} />
         <Route path="/planner" element={<PlannerPage />} />
-        <Route path="/google/callback" element={<GoogleCallback />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/login-success" element={<LoginSuccess />} />
         <Route path="/favorites" element={<Favorites />} />

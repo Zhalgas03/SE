@@ -205,12 +205,12 @@ function AccountLeft({
       </div>
 
       <button
-        onClick={onChangePassword}
-        className="btn btn-outline-dark w-100"
-        disabled={isChangingPassword}
-      >
-        {isChangingPassword ? 'Changing...' : 'Change Password'}
-      </button>
+  onClick={onChangePassword}
+  className="btn btn-change w-100"
+  disabled={isChangingPassword}
+>
+  {isChangingPassword ? 'Changing...' : 'Change Password'}
+</button>
     </div>
   );
 }

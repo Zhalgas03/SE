@@ -290,3 +290,20 @@ h3.fw-bold.mb-4 {
   color: var(--page-title-color) !important;
   transition: color .25s ease;
 }
+
+
+/* === Change Password button (light + dark) === */
+.btn-change {
+  background: #e6e6e6;
+  color: #212529;
+  border: 1px solid #212529;
+  
+}
+
+
+/* 🌙 Dark theme */
+body.dark-theme .btn-change {
+  color: #e6e6e6;
+  border-color: #b5b5b5;
+}
+

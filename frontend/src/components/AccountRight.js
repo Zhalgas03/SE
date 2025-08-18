@@ -1,14 +1,6 @@
 import React from 'react';
 
 function AccountRight({ isSubscribed, onSubscribe, isDarkTheme, isPremium }) {
-  if (isSubscribed || isPremium) {
-    return (
-      <div className="alert alert-success mt-3 text-center fw-semibold fs-5">
-        🎉 Вы уже на Premium
-      </div>
-    );
-  }
-
   return (
     <div className="premium-wrapper-light p-4 rounded-4 bg-white shadow-sm">
       <h4 className="mb-4 text-center fw-bold fs-4 text-dark">Upgrade to Premium</h4>
@@ -32,9 +24,9 @@ function AccountRight({ isSubscribed, onSubscribe, isDarkTheme, isPremium }) {
               <li>• Cancel anytime</li>
             </ul>
 
-            {isPremium ? (
+            {(isSubscribed || isPremium) ? (
               <button className="btn btn-secondary rounded-pill fw-semibold mt-auto" disabled>
-                Ваш план
+                Your plan
               </button>
             ) : (
               <button
@@ -80,6 +72,5 @@ function AccountRight({ isSubscribed, onSubscribe, isDarkTheme, isPremium }) {
     </div>
   );
 }
-
 
 export default AccountRight;

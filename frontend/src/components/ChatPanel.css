@@ -198,3 +198,26 @@ body.dark-theme .chat-btn {
   color: #e6e6e6;                    /* черный текст */
 }
 
+/* Base typing loader (виден в светлой теме) */
+.typing-loader span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 2px;
+  border-radius: 50%;
+  background-color: #666;     /* <<< добавили базовый цвет для light */
+  animation: typing-blink 1.2s infinite ease-in-out both;
+}
+
+.typing-loader span:nth-child(2) { animation-delay: 0.2s; }
+.typing-loader span:nth-child(3) { animation-delay: 0.4s; }
+
+/* Dark override */
+body.dark-theme .typing-loader span {
+  background-color: #ccc;
+}
+
+@keyframes typing-blink {
+  0%, 80%, 100% { transform: scale(0); }
+  40%          { transform: scale(1); }
+}
