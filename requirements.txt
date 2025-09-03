@@ -1,8 +1,9 @@
 Flask
 Flask-Cors
 Flask-JWT-Extended
-Flask-Dance
+flask_dance
 python-dotenv
 stripe
 psycopg2-binary
 requests
+reportlab

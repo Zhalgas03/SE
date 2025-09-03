@@ -142,6 +142,8 @@ function TripVisualizer() {
       }
 
       pdf.setProperties({ title: generateTripName(tripSummary) });
+      pdf.save({title: generateTripName(tripSummary)}.pdf);
+      
 
       // сохранить на сервер
       const pdfBase64 = pdf.output("datauristring");
