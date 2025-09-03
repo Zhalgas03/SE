@@ -1,0 +1,164 @@
+/* ===== Confirm Vote Modal (theme-aware) ===== */
+
+/* tokens */
+:root {
+  --confirm-bg: var(--card-bg, #ffffff);
+  --confirm-text: var(--text-color, #212529);
+  --confirm-muted: #666;
+  --confirm-surface: #f3f3f3;
+  --confirm-border: var(--border-color, #e0e0e0);
+  --confirm-overlay: rgba(0, 0, 0, 0.5);
+  --confirm-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+
+  --confirm-cancel-bg: #f0f0f0;
+  --confirm-cancel-text: #444;
+  --confirm-cancel-hover: #e0e0e0;
+
+  --confirm-cta-bg: #28a745;
+  --confirm-cta-hover: #218838;
+  --confirm-cta-text: #fff;
+}
+
+body.dark-theme {
+  --confirm-bg: var(--card-bg, #1e1e1e);
+  --confirm-text: var(--text-color, #e0e0e0);
+  --confirm-muted: #aaaaaa;
+  --confirm-surface: #2a2a2a;
+  --confirm-border: var(--border-color, #333);
+  --confirm-overlay: rgba(0, 0, 0, 0.6);
+  --confirm-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+
+  --confirm-cancel-bg: #2a2a2a;
+  --confirm-cancel-text: #e6e6e6;
+  --confirm-cancel-hover: #3a3a3a;
+
+  --confirm-cta-bg: #2ea44f;
+  --confirm-cta-hover: #278a43;
+  --confirm-cta-text: #fff;
+}
+
+/* overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--confirm-overlay);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* box */
+.modal-box {
+  background: var(--confirm-bg);
+  color: var(--confirm-text);
+  border: 1px solid var(--confirm-border);
+  border-radius: 12px;
+  padding: 24px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--confirm-shadow);
+  transition: background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.modal-question {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.modal-comment-block { margin-bottom: 20px; }
+
+.modal-comment-label {
+  font-size: 13px;
+  color: var(--confirm-muted);
+  margin-bottom: 4px;
+}
+
+.modal-comment-content {
+  background: var(--confirm-surface);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  border: 1px solid var(--confirm-border);
+  color: var(--confirm-text);
+}
+
+/* buttons */
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-cancel,
+.btn-vote {
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color .2s ease, color .2s ease, filter .15s ease;
+}
+
+.btn-cancel {
+  background: var(--confirm-cancel-bg);
+  color: var(--confirm-cancel-text);
+}
+
+.btn-cancel:hover { background: var(--confirm-cancel-hover); }
+
+.btn-vote {
+  background: var(--confirm-cta-bg);
+  color: var(--confirm-cta-text);
+  padding: 8px 16px;
+}
+
+.btn-vote:hover { background: var(--confirm-cta-hover); }
+
+.btn-cancel:focus-visible,
+.btn-vote:focus-visible {
+  outline: 2px solid var(--btn-color, #0d6efd);
+  outline-offset: 2px;
+}
+/* Кнопки при загрузке */
+.btn-cancel[disabled],
+.btn-vote[disabled] {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Визуальная подсветка фоновой загрузки */
+.modal-overlay[aria-busy="true"] {
+  cursor: progress;
+}
+
+/* Спиннер */
+.spinner {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  vertical-align: -3px;
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Немного места для спиннера внутри кнопки */
+.btn-vote.is-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}

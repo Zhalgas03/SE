@@ -1,0 +1,47 @@
+
+.tripv {
+    padding: 24px !important; /* 1.5rem */
+  }
+
+/* общий контейнер TripVisualizer */
+@media (max-width: 576px) {
+  .tripv { padding: 8px 10px !important; }
+
+  /* Заголовок */
+  .trip-header h2 { font-size: 18px; margin-bottom: 4px; }
+  .trip-header .date { font-size: 12px; }
+  .trip-header .badge { margin-bottom: 6px; }
+
+  /* Itinerary */
+  .it-card { margin: 0 !important; }
+  .it-card .card-body { padding: 12px !important; } /* ← компактнее */
+  .it-card h5 { margin: 0 0 6px !important; }
+
+  .it-map { height: 180px !important; margin: 0 !important; position: relative; z-index: 0; }
+  .it-acc { margin: 0 !important; position: relative; z-index: 1; }
+
+  .it-card .accordion-button { padding: 8px 12px; font-size: 14px; }
+  .it-card .accordion-body { padding: 10px 12px; }
+  .it-part { margin-bottom: 8px !important; }
+  .time-badge { min-width: auto !important; font-size: 12px !important; padding: 2px 8px !important; }
+  .it-left { margin-right: 10px !important; }
+  .it-intro { margin: 6px 0 !important; }
+
+  /* Все карточки в Trip — боковые паддинги по 12px */
+  #trip-pdf-content .card > .card-body {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Transfer (omio) */
+  .omio-row { padding: 10px 12px !important; }
+  .omio-right { min-width: auto !important; align-items: flex-start !important; }
+  .omio-price { font-size: 16px !important; }
+  .omio-cta { padding: 6px 8px !important; }
+
+  /* Hotels */
+  .hotel-col { padding-left: 0 !important; padding-right: 0 !important; }
+  .hotel-card { padding: 10px !important; }
+  .hotel-name { font-size: 14px !important; }
+  .hotel-total { font-size: 16px !important; }
+}

@@ -1,0 +1,206 @@
+/* ===== THEMEABLE MODAL (sizes unchanged) ===== */
+
+/* modal color tokens (fallbacks use your global vars when есть) */
+:root {
+  --modal-bg: var(--card-bg, #ffffff);
+  --modal-text: var(--text-color, #212529);
+  --modal-muted: #777;
+  --modal-border: var(--border-color, #cccccc);
+  --modal-input-bg: var(--card-bg, #ffffff);
+  --modal-link: var(--btn-color, #0077cc);
+  --modal-cancel-bg: #eeeeee;
+  --modal-cancel-text: #000000;
+  --modal-success-bg: #28a745;
+  --modal-success-text: #ffffff;
+  --modal-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  --modal-overlay: rgba(0, 0, 0, 0.5);
+}
+
+body.dark-theme {
+  --modal-bg: var(--card-bg, #1e1e1e);
+  --modal-text: var(--text-color, #e0e0e0);
+  --modal-muted: #aaaaaa;
+  --modal-border: var(--border-color, #2c2c2c);
+  --modal-input-bg: var(--card-bg, #1e1e1e);
+  --modal-link: var(--btn-color, #4dabf7);
+  --modal-cancel-bg: #2a2a2a;
+  --modal-cancel-text: #e6e6e6;
+  --modal-success-bg: #2ea44f;        /* слегка холоднее зелёный в дарке */
+  --modal-success-text: #ffffff;
+  --modal-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+  --modal-overlay: rgba(0, 0, 0, 0.6);
+}
+
+/* === Overlay === */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-overlay);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+/* === Container === */
+.modal-container {
+  background: var(--modal-bg);
+  color: var(--modal-text);
+  padding: 2rem;
+  border-radius: 1.5rem;
+  max-width: 500px;   /* unchanged */
+  width: 90%;         /* unchanged */
+  box-shadow: var(--modal-shadow);
+  font-family: 'Segoe UI', sans-serif;
+  transition: background-color .25s ease, color .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+
+/* === Typography === */
+.modal-title {
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 0.25rem;
+}
+
+.modal-subtitle {
+  font-size: 1.1rem;
+  text-align: center;
+  color: var(--modal-muted);
+  margin-bottom: 1.5rem;
+}
+
+.modal-label {
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+  color: var(--modal-text);
+  display: block;
+}
+
+/* === Inputs === */
+.modal-input,
+.modal-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--modal-border);
+  border-radius: 0.75rem;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
+  font-size: 0.95rem;
+  background: var(--modal-input-bg);
+  color: var(--modal-text);
+  transition: background-color .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.modal-input::placeholder,
+.modal-textarea::placeholder {
+  color: var(--modal-muted);
+}
+
+.modal-input:focus,
+.modal-textarea:focus {
+  outline: none;
+  border-color: var(--btn-color, #0d6efd);
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, .25);
+}
+
+.modal-textarea {
+  resize: none;
+  height: 90px; /* unchanged */
+}
+
+/* === Layout === */
+.modal-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modal-row > div {
+  flex: 1;
+}
+
+.modal-checkbox-label {
+  font-size: 0.95rem;
+  color: var(--modal-text);
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.modal-checkbox {
+  margin-right: 0.5rem;
+}
+
+/* === Helpers === */
+.modal-message {
+  font-size: 0.95rem;
+  color: green;
+  margin-bottom: 0.5rem;
+}
+
+.modal-link {
+  font-size: 0.95rem;
+  word-break: break-all;
+  margin-bottom: 1rem;
+}
+
+.modal-link a {
+  color: var(--modal-link);
+  text-decoration: underline;
+}
+
+/* === Buttons === */
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.modal-btn {
+  padding: 0.6rem 1.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  border: none;
+  transition: filter .15s ease, background-color .2s ease, color .2s ease;
+}
+
+.modal-btn:hover {
+  filter: brightness(0.98);
+}
+
+.modal-btn.cancel {
+  background-color: var(--modal-cancel-bg);
+  color: var(--modal-cancel-text);
+}
+
+.modal-btn.create {
+  background-color: var(--modal-success-bg);
+  color: var(--modal-success-text);
+}
+
+/* === Animations === */
+.scale-in {
+  animation: scaleIn 350ms ease-out forwards;
+}
+
+.scale-out {
+  animation: scaleOut 350ms ease-in forwards;
+}
+
+@keyframes scaleIn {
+  0% { opacity: 0; transform: scale(0.7); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes scaleOut {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.7); }
+}
+@media (max-width: 480px) {
+  .modal-row .modal-input[type="number"] {
+    min-width: 60px;
+  }
+}

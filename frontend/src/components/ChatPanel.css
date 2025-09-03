@@ -1,0 +1,223 @@
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+/* -------- DEFAULT (LIGHT) THEME -------- */
+.planner-container {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chat-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-weight: 500;
+  background-color: #fff;
+  border: 1px solid #ced4da;
+  border-radius: 10px;
+  padding: 9px 20px;
+  font-size: 15px;
+  color: #212529;
+  transition: all 0.2s ease;
+}
+
+.chat-btn .icon-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: #000;
+  color: #fff;
+  font-size: 13px;
+}
+
+.chat-wrapper {
+  padding-bottom: 0.5rem;
+}
+
+/* Mobile adjustments */
+@media (max-width: 576px) {
+  .chat-btn {
+    padding: 8px 10px;
+  }
+
+  .chat-btn span.d-sm-inline {
+    display: none !important;
+  }
+
+  .chat-wrapper {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+
+/* -------- DARK THEME OVERRIDES -------- */
+body.dark-theme .chat-container,
+body.dark-theme .chat-wrapper {
+  background-color: #121212;
+  color: #e6e6e6;
+}
+
+body.dark-theme .chat-btn {
+  background-color: #1f1f1f;
+  border: 1px solid #2c2c2c;
+  color: #e6e6e6;
+}
+
+body.dark-theme .chat-btn:hover {
+  background-color: #2a2a2a;
+}
+
+body.dark-theme .chat-btn .icon-circle {
+  background-color: #10a37f;
+  color: white;
+}
+
+body.dark-theme .bg-primary.text-white {
+  background-color: #10a37f !important;
+  color: white !important;
+}
+
+body.dark-theme .bg-white.text-dark {
+  background-color: #1f1f1f !important;
+  color: #e6e6e6 !important;
+  border: 1px solid #2c2c2c !important;
+}
+
+body.dark-theme .shadow-sm {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+}
+
+body.dark-theme textarea.form-control {
+  background-color: #1f1f1f !important;
+  color: #e6e6e6 !important;
+  border: none;
+}
+
+body.dark-theme textarea.form-control::placeholder {
+  color: #aaa;
+}
+
+body.dark-theme .btn.btn-primary {
+  background-color: #10a37f;
+  border: none;
+}
+
+body.dark-theme .btn.btn-primary:disabled {
+  background-color: #444;
+  opacity: 0.6;
+}
+
+body.dark-theme .typing-loader span {
+  background-color: #ccc;
+}
+
+/* Animation stays same */
+.typing-loader span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 2px;
+  border-radius: 50%;
+  animation: typing-blink 1.2s infinite ease-in-out both;
+}
+
+.typing-loader span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-loader span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing-blink {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+/* White button for dark theme */
+body.dark-theme .chat-btn {
+  background-color: transparent;
+  border: 1px solid #ccc;
+  color: #fff;
+}
+body.dark-theme .chat-btn:hover {
+  background-color: #2c2c2c;
+}
+body.dark-theme .chat-btn .icon-circle {
+  background-color: #fff;
+  color: #000;
+}
+
+/* Dark blue bubble for user messages */
+body.dark-theme .bg-primary.text-white {
+  background-color: #0d6efd !important;  /* dark blue */
+  color: white !important;
+}
+
+/* Input area styling */
+body.dark-theme .chat-wrapper .border {
+  background-color: #1f1f1f !important;
+  border: 1px solid #2c2c2c !important;
+}
+
+body.dark-theme textarea.form-control {
+  background-color: #1f1f1f !important;
+  color: #e6e6e6 !important;
+  border: none;
+}
+
+body.dark-theme textarea.form-control::placeholder {
+  color: #aaa;
+}
+
+body.dark-theme .btn.btn-primary {
+  background-color: #0d6efd;
+  border: none;
+}
+
+
+body.dark-theme .chat-btn {
+  background-color: #2c2c2c;         /* белая кнопка */
+  border: 1px solid #2c2c2c;
+  color: #e6e6e6;                    /* черный текст */
+}
+
+/* Base typing loader (виден в светлой теме) */
+.typing-loader span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 2px;
+  border-radius: 50%;
+  background-color: #666;     /* <<< добавили базовый цвет для light */
+  animation: typing-blink 1.2s infinite ease-in-out both;
+}
+
+.typing-loader span:nth-child(2) { animation-delay: 0.2s; }
+.typing-loader span:nth-child(3) { animation-delay: 0.4s; }
+
+/* Dark override */
+body.dark-theme .typing-loader span {
+  background-color: #ccc;
+}
+
+@keyframes typing-blink {
+  0%, 80%, 100% { transform: scale(0); }
+  40%          { transform: scale(1); }
+}

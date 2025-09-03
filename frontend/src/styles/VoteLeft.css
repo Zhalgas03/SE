@@ -1,0 +1,352 @@
+/* ==== Vote card — theme tokens ==== */
+:root {
+  --vote-card-bg: var(--card-bg, #fff);
+  --vote-text: var(--text-color, #1f2937);
+  --vote-muted: #666;
+  --vote-border: var(--border-color, #e0e0e0);
+  --vote-surface-2: #f4f4f4;   /* для stat-box */
+  --vote-surface-3: #f9f9f9;   /* для comments */
+  --vote-shadow: 0 0 12px rgba(0, 0, 0, 0.06);
+
+  --vote-primary: #3b82f6;     /* прогресс/акценты */
+  --vote-progress-bg: #e5e7eb;
+
+  --vote-success: #28a745;
+  --vote-success-hover: #218838;
+
+  --vote-danger: #dc3545;
+  --vote-danger-hover: #c82333;
+}
+
+body.dark-theme {
+  --vote-card-bg: var(--card-bg, #1e1e1e);
+  --vote-text: var(--text-color, #e0e0e0);
+  --vote-muted: #a8a8a8;
+  --vote-border: var(--border-color, #333);
+  --vote-surface-2: #262626;
+  --vote-surface-3: #1f1f1f;
+  --vote-shadow: 0 0 16px rgba(0, 0, 0, 0.5);
+
+  --vote-primary: #60a5fa;
+  --vote-progress-bg: #2a2a2a;
+
+  --vote-success: #2ea44f;
+  --vote-success-hover: #278a43;
+
+  --vote-danger: #ef4444;
+  --vote-danger-hover: #dc2626;
+}
+
+/* wrapper */
+.vote-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 30px;
+}
+
+/* card */
+.vote-card {
+  width: 100%;
+  max-width: 600px;
+  background: var(--vote-card-bg);
+  color: var(--vote-text);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--vote-shadow);
+  border: 1px solid var(--vote-border);
+  font-family: system-ui, sans-serif;
+  transition: background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+
+/* title and description */
+.vote-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.vote-description {
+  font-size: 14px;
+  color: var(--vote-muted);
+  margin-bottom: 16px;
+}
+
+/* voting status & progress */
+.vote-status {
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: var(--vote-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vote-progress-bar {
+  position: relative;
+  height: 10px;
+  width: 100%;
+  background-color: var(--vote-progress-bg);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
+.vote-progress-fill {
+  position: absolute;
+  height: 100%;
+  background-color: var(--vote-primary);
+  transition: width 0.5s ease-in-out, background-color 0.3s ease-in-out;
+  border-radius: 6px 0 0 6px;
+}
+
+.vote-progress-label {
+  font-size: 12px;
+  color: var(--vote-muted);
+  margin-top: 4px;
+  margin-bottom: 16px;
+}
+
+/* sections */
+.vote-section { margin-top: 28px; }
+
+.vote-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* statistics */
+.vote-stat-total {
+  font-size: 15px;
+  margin-bottom: 8px;
+  color: var(--vote-text);
+}
+
+.vote-stat-row {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  justify-content: space-between;
+}
+
+.vote-stat-box {
+  flex: 1;
+  position: relative;
+  border-radius: 0.5rem;
+  background-color: var(--vote-surface-2);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vote-border) 70%, transparent);
+  padding: 1rem;
+  border: 1px solid var(--vote-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.vote-stat-fill {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  z-index: 1;
+  border-radius: 0.5rem;
+  transition: width 0.4s ease;
+  opacity: 0.3;
+}
+
+.vote-stat-for .vote-stat-fill { background-color: var(--vote-success); }
+.vote-stat-against .vote-stat-fill { background-color: var(--vote-danger); }
+
+.vote-stat-box-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.vote-stat-label {
+  font-size: 13px;
+  color: var(--vote-muted);
+  margin-bottom: 0.25rem;
+}
+
+.vote-stat-count {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--vote-text);
+}
+
+.vote-stat-for { border-left: 4px solid var(--vote-success); }
+.vote-stat-against { border-left: 4px solid var(--vote-danger); }
+
+/* input */
+.vote-comment {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--vote-border);
+  border-radius: 6px;
+  resize: none;
+  font-size: 14px;
+  margin-bottom: 12px;
+  background: var(--vote-card-bg);
+  color: var(--vote-text);
+}
+
+.vote-comment::placeholder { color: var(--vote-muted); }
+
+/* buttons */
+.vote-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-start;
+}
+
+.vote-button {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #fff;
+}
+
+.vote-button-for { background-color: var(--vote-success); }
+.vote-button-for:hover { background-color: var(--vote-success-hover); }
+
+.vote-button-against { background-color: var(--vote-danger); }
+.vote-button-against:hover { background-color: var(--vote-danger-hover); }
+
+.vote-voted-text {
+  margin-top: 12px;
+  color: var(--vote-success);
+  font-weight: 600;
+  font-size: 15px;
+}
+
+/* comments */
+.vote-comment-item {
+  background: var(--vote-surface-3);
+  border: 1px solid var(--vote-border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.vote-comment-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--vote-muted);
+  margin-bottom: 4px;
+}
+
+.vote-comment-user { font-weight: bold; color: var(--vote-text); }
+.vote-comment-text { font-size: 14px; color: var(--vote-text); }
+
+.vote-no-comments {
+  font-style: italic;
+  color: var(--vote-muted);
+  font-size: 14px;
+}
+
+/* error message */
+.vote-error-text { 
+  background-color: #fee2e2; 
+  color: #b91c1c; 
+  padding: 8px; 
+  border-radius: 4px; 
+  margin-top: 8px; 
+  font-weight: 500; 
+}
+body.dark-theme .vote-error-text {
+  background-color: #451a1a;
+  color: #fca5a5;
+}
+/* обёртка внутри левой колонки */
+.vote-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 0;                 /* было 30px — убираем, чтобы сжимался паддинг родителя */
+}
+
+/* карточка: держим целевую ширину, но разрешаем сжиматься, когда места не хватит */
+.vote-card {
+  width: 680px;               /* выбери 640–720 на вкус */
+  max-width: 100%;
+  margin: 0 auto;
+  border-radius: 12px;
+  padding: 24px;
+  background: var(--vote-card-bg);
+  color: var(--vote-text);
+  box-shadow: var(--vote-shadow);
+  border: 1px solid var(--vote-border);
+  box-sizing: border-box;
+}
+/* ===== Mobile: full‑width card + better buttons ===== */
+@media (max-width: 768px) {
+  /* Карточка на всю ширину (перекрываем твой width:680px) */
+  .vote-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 34px 34px 88px !important; 
+    border-radius: 12px;
+  }
+
+  /* Панель кнопок «прилипает» к низу карточки */
+  .vote-buttons {
+    position: sticky;
+    bottom: 0;
+    left: 0; right: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;   /* две равные кнопки в ряд */
+    gap: 10px;
+    padding: 10px;
+    margin: 0 -14px -14px;            /* фон панели на всю ширину карточки */
+    background: var(--vote-card-bg);
+    border-top: 1px solid var(--vote-border);
+    box-shadow: 0 -8px 24px rgba(0,0,0,.08);
+    z-index: 2;
+  }
+
+  /* На совсем узких экранах кнопки в столбик */
+  @media (max-width: 360px) {
+    .vote-buttons { grid-template-columns: 1fr; }
+  }
+
+  /* Сами кнопки — большие, удобные, с актив/фокус эффектами */
+  .vote-button {
+    height: 50px;
+    width: 100%;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: .2px;
+    transition: transform .08s ease, filter .15s ease, box-shadow .15s ease;
+    box-shadow: 0 6px 14px rgba(0,0,0,.08);
+  }
+  .vote-button:active { transform: translateY(1px) scale(.99); }
+  .vote-button:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--vote-primary, #3b82f6) 70%, transparent);
+    outline-offset: 2px;
+  }
+
+  /* Цвета/градиенты (можно убрать градиент, если не нравится) */
+  .vote-button-for {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--vote-success) 92%, white) 0%, var(--vote-success) 100%);
+  }
+  .vote-button-for:hover { filter: brightness(1.03); }
+
+  .vote-button-against {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--vote-danger) 92%, white) 0%, var(--vote-danger) 100%);
+  }
+  .vote-button-against:hover { filter: brightness(1.03); }
+}

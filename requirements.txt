@@ -1,0 +1,8 @@
+Flask
+Flask-Cors
+Flask-JWT-Extended
+Flask-Dance
+python-dotenv
+stripe
+psycopg2-binary
+requests

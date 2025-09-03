@@ -1,0 +1,207 @@
+/* воздух сверху страницы */
+.fav-container {
+  padding-top: clamp(40px, 8vh, 110px);
+  padding-bottom: 24px;
+}
+
+
+.fav-card {
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding-block: 1.35rem;      /* ↑ немного выше по вертикали */
+  min-height: 120px;           /* лёгкая базовая высота */
+}
+
+
+/* зазор между списком и пагинацией */
+.fav-grid {                    /* сетка карточек */
+  margin-bottom: 28px;         /* ↓ отступ до пагинации */
+}
+
+/* пагинация — в теме */
+.fav-pagination .page-link {
+  background: var(--card-bg);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+.fav-pagination .page-item.active .page-link {
+  background: var(--btn-color);
+  border-color: var(--btn-color);
+  color: #fff;
+}
+.fav-pagination .page-item.disabled .page-link {
+  color: rgba(127,127,127,.7);
+  background: color-mix(in srgb, var(--card-bg) 90%, black 10%);
+  cursor: not-allowed;
+}
+
+/* светлая тема — мягче границы пагинации */
+:root body:not(.dark-theme) .fav-pagination .page-link {
+  background: #fff;
+  border-color: #e5e7eb;
+}
+/* расстояние между последним рядом карточек и пагинацией */
+.fav-grid {
+  margin-bottom: 40px !important; /* сделай 32–56px по вкусу */
+}
+
+/* на всякий случай дожмём сам блок пагинации */
+/* --- Пагинация: базовые цвета под темы --- */
+.fav-pagination .page-link {
+  background: var(--card-bg);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+/* активная страница — всегда контрастная */
+.fav-pagination .page-item.active .page-link {
+  background: var(--btn-color);
+  border-color: var(--btn-color);
+  color: #fff;
+}
+
+/* отключаем hover-эффект у всех элементов пагинации */
+.fav-pagination .page-link:hover,
+.fav-pagination .page-item.active .page-link:hover {
+  background: inherit;         /* не меняем фон */
+  color: inherit;              /* не меняем цвет текста */
+  border-color: inherit;       /* не меняем границу */
+}
+
+/* disabled — блеклые, но читаемые */
+.fav-pagination .page-item.disabled .page-link {
+  color: rgba(127,127,127,.7);
+  background: color-mix(in srgb, var(--card-bg) 92%, black 8%);
+  cursor: not-allowed;
+}
+
+/* Светлая тема: не перебиваем активный фон! */
+:root body:not(.dark-theme) .fav-pagination .page-link {
+  background: #fff;
+  border-color: #e5e7eb;
+}
+:root body:not(.dark-theme) .fav-pagination .page-item.active .page-link {
+  background: var(--btn-color);     /* снова закрепляем синим */
+  border-color: var(--btn-color);
+  color: #fff;
+}
+/* отключаем hover для пагинации */
+.fav-pagination .page-link:hover,
+.fav-pagination .page-item.active .page-link:hover,
+.fav-pagination .page-item.disabled .page-link:hover {
+  background: inherit !important; /* фон не меняем */
+  color: inherit !important;      /* цвет текста не меняем */
+  border-color: inherit !important; /* границу не меняем */
+  cursor: default;                /* курсор обычный */
+}
+
+/* --- Pagination: no hover, no focus, no active flicker --- */
+.fav-pagination .pagination .page-link,
+.fav-pagination .pagination .page-link:link,
+.fav-pagination .pagination .page-link:visited {
+  background: var(--card-bg) !important;
+  color: var(--text-color) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  text-decoration: none !important;
+  transition: none !important;
+}
+
+/* глушим ЛЮБОЙ интерактив */
+.fav-pagination .pagination .page-link:hover,
+.fav-pagination .pagination .page-link:focus,
+.fav-pagination .pagination .page-link:active {
+  background: var(--card-bg) !important;
+  color: var(--text-color) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* активная страница — фиксированный вид; тоже без hover */
+.fav-pagination .page-item.active .page-link,
+.fav-pagination .page-item.active .page-link:hover,
+.fav-pagination .page-item.active .page-link:focus,
+.fav-pagination .page-item.active .page-link:active {
+  background: var(--btn-color) !important;
+  border-color: var(--btn-color) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* disabled — не кликается вообще */
+.fav-pagination .page-item.disabled .page-link,
+.fav-pagination .pagination .page-link[disabled] {
+  pointer-events: none !important;
+  cursor: default !important;
+  background: color-mix(in srgb, var(--card-bg) 92%, black 8%) !important;
+  color: rgba(127,127,127,.7) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* на всякий: убираем внутренний фокус у Bootstrap 5 */
+.fav-pagination .page-link:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+/* красим весь вьюпорт в цвет темы */
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg-color) !important;
+  color: var(--text-color);
+}
+
+/* корень React тоже красим/растягиваем */
+#root {
+  min-height: 100svh;            /* safe viewport */
+  background: var(--bg-color) !important;
+}
+
+/* у страниц фон прозрачный — пусть просвечивает body */
+.container,
+.container-fluid,
+.fav-container,
+.fav-pagination,
+.fav-pagination .pagination {
+  background: transparent !important;
+}
+
+/* на всякий: модалки под тему */
+.modal-content {
+  background: var(--card-bg);
+  color: var(--text-color);
+}
+/* Themed modal */
+.themed-modal .modal-content {
+  background-color: var(--card-bg) !important;
+  color: var(--text-color) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+}
+
+.themed-modal .modal-header,
+.themed-modal .modal-body,
+.themed-modal .modal-footer {
+  background-color: var(--card-bg) !important;
+  color: var(--text-color) !important;
+  border-color: var(--border-color) !important; /* линии header/footer */
+}
+
+/* Крестик, чтобы был виден в тёмной теме */
+body.dark-theme .themed-modal .btn-close {
+  filter: invert(1) grayscale(1);
+  opacity: .8;
+}
+body.dark-theme .themed-modal .btn-close:hover { opacity: 1; }
+
+/* На всякий — не даём другим стилям перебить фон */
+.themed-modal .modal-body, 
+.themed-modal .modal-header { background: var(--card-bg) !important; }
+
+
