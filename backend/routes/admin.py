@@ -101,27 +101,74 @@ def delete_user(user_id):
 
 
 # Удаление поездки
-@admin_bp.route("/trips/<int:trip_id>", methods=["DELETE"])
+@admin_bp.route("/trips/<string:trip_id>", methods=["DELETE"])
 @jwt_required()
 @admin_required
 def delete_trip(trip_id):
     conn = get_db_connection()
-    with conn.cursor() as cur:
-        cur.execute("DELETE FROM trips WHERE id = %s", (trip_id,))
-        conn.commit()
-    return jsonify(success=True)
+    try:
+        with conn, conn.cursor() as cur:
+            # 1) Явно проверим, есть ли строка
+            cur.execute("SELECT 1 FROM trips WHERE id = %s::uuid", (trip_id,))
+            exists = cur.fetchone() is not None
+            print("[DELETE TRIP] hit", trip_id, "exists:", exists)
 
-# Удаление голосования
-@admin_bp.route("/votes/<int:vote_id>", methods=["DELETE"])
+            if not exists:
+                return jsonify(success=False, message="Trip not found (precheck)"), 404
+
+            # 2) Удаляем
+            cur.execute("DELETE FROM trips WHERE id = %s::uuid RETURNING id", (trip_id,))
+            row = cur.fetchone()
+
+        if not row:
+            # сюда попадёшь только при гонке между SELECT и DELETE
+            print("[DELETE TRIP] race: deleted by someone else")
+            return jsonify(success=False, message="Trip not found (race)"), 404
+
+        return jsonify(success=True), 200
+
+    except errors.ForeignKeyViolation as e:
+        return jsonify(success=False, message="Trip has dependent records", detail=str(e)), 409
+    except Exception as e:
+        print("[DELETE TRIP ERROR]", e)
+        return jsonify(success=False, message="Internal server error"), 500
+
+
+# Удаление голосования (UUID)
+@admin_bp.route("/votes/<string:vote_id>", methods=["DELETE"])
 @jwt_required()
 @admin_required
 def delete_vote(vote_id):
-    conn = get_db_connection()
-    with conn.cursor() as cur:
-        cur.execute("DELETE FROM voting_sessions WHERE id = %s", (vote_id,))
-        conn.commit()
-    return jsonify(success=True)
+    print("[DELETE VOTE] hit", vote_id)
+    try:
+        conn = get_db_connection()
+        with conn, conn.cursor() as cur:
+            # precheck: есть ли такая сессия?
+            cur.execute("SELECT 1 FROM voting_sessions WHERE id = %s::uuid", (vote_id,))
+            exists = cur.fetchone() is not None
+            print("[DELETE VOTE] exists:", exists)
+            if not exists:
+                return jsonify(success=False, message="Voting session not found"), 404
 
-@admin_bp.route("/<path:any_path>", methods=["OPTIONS"])
-def options_handler(any_path):
-    return '', 200
+            cur.execute(
+                "DELETE FROM voting_sessions WHERE id = %s::uuid RETURNING id;",
+                (vote_id,)
+            )
+            row = cur.fetchone()
+
+        if not row:
+            # гонка: кто-то удалил между SELECT и DELETE
+            return jsonify(success=False, message="Voting session not found (race)"), 404
+
+        return jsonify(success=True), 200
+
+    except errors.ForeignKeyViolation as e:
+        return jsonify(
+            success=False,
+            message="Voting session cannot be deleted due to existing references",
+            detail=str(e),
+            hint="Delete related votes first or add ON DELETE CASCADE"
+        ), 409
+    except Exception as e:
+        print("[DELETE VOTE ERROR]", e)
+        return jsonify(success=False, message="Internal server error"), 500
