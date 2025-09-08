@@ -1,252 +1,204 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { useUser } from "../context/UserContext"; // путь проверь!
+import { useUser } from "../context/UserContext";
 
-const clean = (val) =>
-  typeof val === "string"
-    ? val.replace(/[^\x20-\x7Eа-яА-ЯёЁіІїЇґҐ\u0400-\u04FF]/g, "�")
-    : val ?? "—";
+import AdminSidebar from "../components/admin/AdminSidebar";
+import StatCard from "../components/admin/StatCard";
+
+import UsersTable from "../components/admin/UsersTable";
+import TripsTable from "../components/admin/TripsTable";
+import VotesTable from "../components/admin/VotesTable";
+import AdminAnalyticsBoard from "../components/AdminAnalyticsBoard";
 
 const API_BASE = "http://localhost:5001";
 
-function AdminPanelPage() {
+export default function AdminPanelPage() {
   const { token, isAdmin, isAuthenticated } = useUser();
   const [users, setUsers] = useState([]);
   const [trips, setTrips] = useState([]);
   const [votes, setVotes] = useState([]);
+  const [totals, setTotals] = useState(null); // из /analytics
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // 🗑️ Удаление пользователя
+  // refs для якорной навигации
+  const usersRef = useRef(null);
+  const analyticsRef = useRef(null);
+  const tripsRef = useRef(null);
+  const votesRef = useRef(null);
+
+  const jump = (key) => {
+    const node = { users: usersRef, analytics: analyticsRef, trips: tripsRef, votes: votesRef }[key]?.current;
+    if (node) node.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // DELETE handlers
   const handleDeleteUser = async (userId, username, role) => {
-    if (role === "admin") {
-      alert("⚠️ You can't delete admin users.");
-      return;
-    }
-  
+    if (role === "admin") return alert("⚠️ You can't delete admin users.");
     if (!window.confirm(`Delete user ${username}? This cannot be undone!`)) return;
-  
     try {
-      const response = await axios.delete(`${API_BASE}/api/admin/users/${userId}`, {
+      const r = await axios.delete(`${API_BASE}/api/admin/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-  
-      if (response.data.success) {
-        setUsers((prev) => prev.filter((u) => u.id !== userId));
-      } else {
-        alert(response.data.message || "Failed to delete user.");
-      }
-    } catch (err) {
-      const msg = err.response?.data?.message || "Error deleting user.";
-      alert(msg); // Вот здесь гарантированно выводим
-      console.error("[DELETE USER]", err);
+      if (r.data?.success) setUsers((prev) => prev.filter((u) => u.id !== userId));
+      else alert(r.data?.message || "Failed to delete user.");
+    } catch (e) {
+      alert(e.response?.data?.message || "Error deleting user.");
     }
   };
-  
-  
 
-  // 🗑️ Удаление поездки
   const handleDeleteTrip = async (tripId, tripName) => {
     if (!window.confirm(`Delete trip "${tripName}"? This cannot be undone!`)) return;
     try {
-      await axios.delete(`${API_BASE}/api/admin/trips/${tripId}`, {
+      const r = await axios.delete(`${API_BASE}/api/admin/trips/${tripId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setTrips((prev) => prev.filter((t) => t.id !== tripId));
-    } catch (err) {
+      if (r.data?.success) setTrips((prev) => prev.filter((t) => t.id !== tripId));
+      else alert(r.data?.message || "Failed to delete trip.");
+    } catch {
       alert("Failed to delete trip.");
-      console.error(err);
     }
   };
 
-  // 🗑️ Удаление голосования
   const handleDeleteVote = async (voteId, voteTitle) => {
     if (!window.confirm(`Delete voting session "${voteTitle}"? This cannot be undone!`)) return;
     try {
-      await axios.delete(`${API_BASE}/api/admin/votes/${voteId}`, {
+      const r = await axios.delete(`${API_BASE}/api/admin/votes/${voteId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setVotes((prev) => prev.filter((v) => v.id !== voteId));
-    } catch (err) {
+      if (r.data?.success) setVotes((prev) => prev.filter((v) => v.id !== voteId));
+      else alert(r.data?.message || "Failed to delete voting session.");
+    } catch {
       alert("Failed to delete voting session.");
-      console.error(err);
     }
   };
 
+  // загрузка данных
   useEffect(() => {
-    if (!isAdmin || !token) return;
+    if (!isAuthenticated || !isAdmin || !token) return;
     setLoading(true);
     Promise.all([
-      axios.get(`${API_BASE}/api/admin/users`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
-      axios.get(`${API_BASE}/api/admin/trips`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
-      axios.get(`${API_BASE}/api/admin/votes`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
+      axios.get(`${API_BASE}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get(`${API_BASE}/api/admin/trips`, { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get(`${API_BASE}/api/admin/votes`, { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get(`${API_BASE}/api/admin/analytics`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
     ])
-      .then(([usersRes, tripsRes, votesRes]) => {
-        setUsers(usersRes.data || []);
-        setTrips(tripsRes.data || []);
-        setVotes(votesRes.data || []);
+      .then(([u, t, v, a]) => {
+        setUsers(u.data || []);
+        setTrips(t.data || []);
+        setVotes(v.data || []);
+        setTotals(a?.data?.totals || null);
         setError(null);
       })
       .catch((err) => {
         setError("Failed to load admin data.");
-        console.error("Admin panel error:", err);
+        console.error("[ADMIN]", err);
       })
       .finally(() => setLoading(false));
-  }, [isAdmin, token]);
+  }, [isAuthenticated, isAdmin, token]);
 
-  if (!isAuthenticated) {
-    return (
-      <div style={{ padding: 32, fontSize: 22, textAlign: "center" }}>
-        Please log in.
-      </div>
-    );
-  }
+  if (!isAuthenticated)
+    return <div style={{ padding: 32, fontSize: 22, textAlign: "center" }}>Please log in.</div>;
 
-  if (!isAdmin) {
-    return (
-      <div style={{ padding: 32, fontSize: 22, textAlign: "center", color: "red" }}>
-        Not allowed. Only admin can see this page.
-      </div>
-    );
-  }
+  if (!isAdmin)
+    return <div style={{ padding: 32, fontSize: 22, textAlign: "center", color: "red" }}>
+      Not allowed. Only admin can see this page.
+    </div>;
 
-  // Только для админа ниже 👇
+  // KPI-фоллбек если analytics не ответил
+  const usersTotal = totals?.users_total ?? users.length;
+  const premiumTotal = totals?.users_premium ?? users.filter(x => x.role === "premium").length;
+  const tripsTotal = totals?.trips_total ?? trips.length;
+  const votesTotal = totals?.votes_total ?? votes.length;
+
   return (
-    <div style={{ maxWidth: 1000, margin: "32px auto", padding: 24 }}>
-      <h1 style={{ textAlign: "center", marginBottom: 32, color: "#248e46" }}>
-        🛠️ Welcome, admin!
-      </h1>
+    <div className="admin-shell">
+      <AdminSidebar onJump={jump} />
 
-      {loading && <div style={{ fontSize: 20 }}>Loading...</div>}
-      {error && <div style={{ color: "red", padding: 12 }}>{error}</div>}
-
-      {/* Users */}
-      <section style={{ marginBottom: 40 }}>
-        <h2>👤 Users</h2>
-        <div style={{ overflowX: "auto", border: "1px solid #eee", borderRadius: 8 }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead style={{ background: "#f3f3f3" }}>
-              <tr>
-                <th>Username</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>2FA</th>
-                <th>Subscribed</th>
-                <th>Delete</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: "center", padding: 12 }}>No users found.</td></tr>
-              ) : users.map((u, i) => (
-                <tr key={u.id || i}>
-                  <td>{clean(u.username)}</td>
-                  <td>{clean(u.email)}</td>
-                  <td>{clean(u.role)}</td>
-                  <td>{u.is_2fa_enabled ? "✅" : "❌"}</td>
-                  <td>{u.is_subscribed ? "✅" : "❌"}</td>
-                  <td>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      style={{ fontSize: 13, padding: "3px 8px" }}
-                      onClick={() => handleDeleteUser(u.id, u.username, u.role)}
-                      disabled={u.role === "admin"}
-                    >
-                      🗑️
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <main className="admin-main">
+        {/* Top bar */}
+        <div className="admin-top">
+          <div className="admin-top-title">Admin Dashboard</div>
+          <div className="admin-top-state">{loading ? "Loading…" : error ? <span style={{ color: "red" }}>{error}</span> : "Ready"}</div>
         </div>
-      </section>
 
-      {/* Trips */}
-      <section style={{ marginBottom: 40 }}>
-        <h2>✈️ Trips</h2>
-        <div style={{ overflowX: "auto", border: "1px solid #eee", borderRadius: 8 }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead style={{ background: "#f3f3f3" }}>
-              <tr>
-                <th>Name</th>
-                <th>Start</th>
-                <th>End</th>
-                <th>Creator</th>
-                <th>Delete</th>
-              </tr>
-            </thead>
-            <tbody>
-              {trips.length === 0 ? (
-                <tr><td colSpan={5} style={{ textAlign: "center", padding: 12 }}>No trips found.</td></tr>
-              ) : trips.map((t, i) => (
-                <tr key={t.id || i}>
-                  <td>{clean(t.name)}</td>
-                  <td>{clean(t.date_start)}</td>
-                  <td>{clean(t.date_end)}</td>
-                  <td>{clean(t.creator_username)}</td>
-                  <td>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      style={{ fontSize: 13, padding: "3px 8px" }}
-                      onClick={() => handleDeleteTrip(t.id, t.name)}
-                    >
-                      🗑️
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* KPI row */}
+        <div className="stat-row">
+          <StatCard title="Users" value={usersTotal} hint={`${premiumTotal} premium`} />
+          <StatCard title="Trips" value={tripsTotal} />
+          <StatCard title="Votes" value={votesTotal} />
+          <StatCard title="2FA Enabled" value={users.filter(u => u.is_2fa_enabled).length} />
         </div>
-      </section>
 
-      {/* Voting */}
-      <section style={{ marginBottom: 40 }}>
-        <h2>🗳️ Voting Sessions</h2>
-        <div style={{ overflowX: "auto", border: "1px solid #eee", borderRadius: 8 }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead style={{ background: "#f3f3f3" }}>
-              <tr>
-                <th>Title</th>
-                <th>Status</th>
-                <th>Expires</th>
-                <th>Creator</th>
-                <th>Delete</th>
-              </tr>
-            </thead>
-            <tbody>
-              {votes.length === 0 ? (
-                <tr><td colSpan={5} style={{ textAlign: "center", padding: 12 }}>No voting sessions found.</td></tr>
-              ) : votes.map((v, i) => (
-                <tr key={v.id || i}>
-                  <td>{clean(v.title)}</td>
-                  <td>{clean(v.status)}</td>
-                  <td>{v.expires_at ? new Date(v.expires_at).toLocaleString() : "—"}</td>
-                  <td>{clean(v.creator_username)}</td>
-                  <td>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      style={{ fontSize: 13, padding: "3px 8px" }}
-                      onClick={() => handleDeleteVote(v.id, v.title)}
-                    >
-                      🗑️
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+        {/* Analytics */}
+        <section ref={analyticsRef} className="admin-section">
+          <h2 className="admin-h2">📊 Analytics</h2>
+          <AdminAnalyticsBoard />
+        </section>
+
+        {/* Users */}
+        <section ref={usersRef} className="admin-section">
+          <UsersTable users={users} onDelete={handleDeleteUser} />
+        </section>
+
+
+
+        {/* Trips */}
+        <section ref={tripsRef} className="admin-section">
+          <TripsTable trips={trips} onDelete={handleDeleteTrip} />
+        </section>
+
+        {/* Votes */}
+        <section ref={votesRef} className="admin-section">
+          <VotesTable votes={votes} onDelete={handleDeleteVote} />
+        </section>
+      </main>
+
+      {/* Минимал стилей прямо здесь, чтобы ничего не тянуть */}
+      <style>{`
+        .admin-shell {
+          display: grid;
+          grid-template-columns: 240px 1fr;
+          min-height: 100vh;
+          background: #f6f7f9;
+        }
+        .admin-aside {
+          background: #fff;
+          border-right: 1px solid #eee;
+          padding: 16px;
+          position: sticky;
+          top: 0;
+          align-self: start;
+          height: 100vh;
+        }
+        .admin-brand { font-weight: 800; font-size: 20px; margin-bottom: 12px; }
+        .admin-nav { display: grid; gap: 6px; }
+        .admin-link {
+          text-align: left; width: 100%;
+          padding: 10px 12px; border-radius: 8px; border: none; cursor: pointer;
+          background: transparent; color: #333; font-size: 14px;
+        }
+        .admin-link:hover { background: #f2f4f7; }
+
+        .admin-main { padding: 20px; }
+        .admin-top {
+          background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 12px 16px;
+          display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+        }
+        .admin-top-title { font-weight: 600; }
+        .stat-row {
+          display: grid; gap: 12px;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          margin-bottom: 16px;
+        }
+        .stat-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 14px; }
+        .stat-title { font-size: 12px; color: #6b7280; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .03em; }
+        .stat-value { font-size: 24px; font-weight: 700; }
+        .stat-hint { font-size: 12px; color: #6b7280; margin-top: 2px; }
+
+        .admin-section { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+        .admin-h2 { margin: 0 0 12px 0; font-size: 18px; }
+      `}</style>
     </div>
   );
 }
-
-export default AdminPanelPage;
