@@ -1,10 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useUser } from "../context/UserContext";
 
 export default function TripOfTheWeek({
   apiBase = "http://localhost:5001",
-  trips = [],            // ✔ получаем избранное от родителя
-  onSaved,               // ✔ коллбек для рефреша списка
+  trips = [],
+  onSaved,
 }) {
+  const { isPremium, token } = useUser();
+
+  // хуки — всегда вызываются
   const [weekly, setWeekly] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -16,9 +20,20 @@ export default function TripOfTheWeek({
   };
 
   useEffect(() => {
+    // если не премиум — просто ничего не грузим и чистим состояние
+    if (!isPremium) {
+      setWeekly(null);
+      return;
+    }
     (async () => {
       try {
-        const r = await fetch(`${apiBase}/weekly/current`);
+        const r = await fetch(`${apiBase}/weekly/current`, {
+          headers: { Authorization: `Bearer ${token || localStorage.getItem("token") || ""}` },
+        });
+        if (r.status === 401 || r.status === 403) {
+          setWeekly(null);
+          return;
+        }
         const j = await r.json();
         if (j?.success) {
           setWeekly({
@@ -27,12 +42,15 @@ export default function TripOfTheWeek({
             summary: j.summary || {},
             meta: j.meta || {},
           });
+        } else {
+          setWeekly(null);
         }
       } catch (e) {
         console.warn("weekly/current failed", e);
+        setWeekly(null);
       }
     })();
-  }, [apiBase]);
+  }, [apiBase, token, isPremium]);
 
   const weeklyName = useMemo(() => buildWeeklyName(weekly), [weekly]);
   const isAlreadyAdded = useMemo(() => {
@@ -42,7 +60,7 @@ export default function TripOfTheWeek({
 
   const openPreview = () => {
     if (!weekly?.preview_url) return;
-    const jwt = localStorage.getItem("token");
+    const jwt = token || localStorage.getItem("token");
     const url = jwt ? `${weekly.preview_url}#rt=${jwt}` : weekly.preview_url;
     window.open(url, "_blank", "noopener,noreferrer");
   };
@@ -59,7 +77,7 @@ export default function TripOfTheWeek({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          Authorization: `Bearer ${token || localStorage.getItem("token") || ""}`,
         },
         body: JSON.stringify({ t: weekly.token }),
       });
@@ -68,12 +86,13 @@ export default function TripOfTheWeek({
         window.location.href = `/login?next=${encodeURIComponent("/favorites")}`;
         return;
       }
-      const j = await res.json();
-      if (j?.success) {
-        onSaved?.(); // ← обновим список в родителе
-      } else {
-        alert(j?.message || "Save failed");
+      if (res.status === 403) {
+        alert("Premium feature. Upgrade to save this trip.");
+        return;
       }
+      const j = await res.json();
+      if (j?.success) onSaved?.();
+      else alert(j?.message || "Save failed");
     } catch {
       alert("Server error");
     } finally {
@@ -81,7 +100,8 @@ export default function TripOfTheWeek({
     }
   };
 
-  if (!weekly) return null;
+  // рендер: если не премиум или нет weekly — ничего не показываем
+  if (!isPremium || !weekly) return null;
 
   const destination = weekly.summary?.destination || "Trip of the Week";
   const days = weekly.meta?.duration_days || 5;

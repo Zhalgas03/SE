@@ -213,23 +213,46 @@ PREVIEW_TMPL = """
 
 # ---------- Public API ----------
 
+
+_cached_offer = None
+_cached_ts = None
+CACHE_TTL = 3600  # 1 час
+
 @weekly_bp.route("/current", methods=["GET"])
 def weekly_current():
-    """
-    Стабильный детерминированный оффер на текущую неделю.
-    Возвращает: {success, token, preview_url, summary, meta}
-    """
-    offer = generate_weekly_trip()
+    global _cached_offer, _cached_ts
+    now = dt.datetime.utcnow()
+
+    # Если есть кэш и он свежий → вернуть его
+    if _cached_offer and _cached_ts and (now - _cached_ts).total_seconds() < CACHE_TTL:
+        return jsonify(_cached_offer)
+
+    # Генерация нового оффера
+    mode        = (request.args.get("mode") or "auto").lower()
+    destination = request.args.get("destination") or None
+    duration    = request.args.get("duration") or None
+    salt        = request.args.get("salt") or None
+
+    offer = generate_weekly_trip(mode=mode, destination=destination, duration=duration, salt=salt)
+
     token = encode_weekly_payload(offer, current_app.config["JWT_SECRET_KEY"], exp_days=14)
     base_url = current_app.config.get("BASE_URL", "http://localhost:5001")
     preview_url = f"{base_url}/weekly/preview?t={token}"
-    return jsonify(
+
+    resp = dict(
         success=True,
+        mode=mode,
+        seed=offer.get("meta", {}).get("generated_at", ""),
         token=token,
         preview_url=preview_url,
         summary=offer.get("summary", {}),
-        meta=offer.get("meta", {})
+        meta=offer.get("meta", {}),
     )
+
+    _cached_offer, _cached_ts = resp, now
+    return jsonify(resp)
+
+
 
 @weekly_bp.route("/preview", methods=["GET"])
 def preview():
@@ -354,32 +377,36 @@ def weekly_ping():
     return jsonify(ok=True)
 
 # ---------- Dev helpers (guarded by ALLOW_WEEKLY_DEV) ----------
-
 @weekly_bp.route("/test-generate", methods=["GET"])
 def weekly_test_generate():
-    # защитим дев-ручку флагом окружения
+    """
+    DEV-ручка для генерации оффера.
+    Query: ?mode=auto|llm|basic&destination=...&duration=3..5&salt=...
+    Возвращает: {success, token, preview_url, summary, mode, salt}
+    """
     if os.getenv("ALLOW_WEEKLY_DEV", "1") != "1":
         return jsonify(success=False, message="Forbidden"), 403
 
-    offer = generate_weekly_trip()
+    mode        = (request.args.get("mode") or "auto").lower()
+    destination = request.args.get("destination") or None
+    duration    = request.args.get("duration") or None
+    salt        = request.args.get("salt") or None
+
+    offer = generate_weekly_trip(mode=mode, destination=destination, duration=duration, salt=salt)
+
     token = encode_weekly_payload(offer, current_app.config["JWT_SECRET_KEY"], exp_days=14)
     base_url = current_app.config.get("BASE_URL", "http://localhost:5001")
     preview_url = f"{base_url}/weekly/preview?t={token}"
-    return jsonify(success=True, token=token, preview_url=preview_url, summary=offer.get("summary", {}))
 
-@weekly_bp.route("/decode", methods=["GET"])
-def weekly_decode():
-    if os.getenv("ALLOW_WEEKLY_DEV", "1") != "1":
-        return jsonify(success=False, message="Forbidden"), 403
+    return jsonify(
+        success=True,
+        mode=mode,
+        salt=salt,
+        token=token,
+        preview_url=preview_url,
+        summary=offer.get("summary", {})
+    )
 
-    t = request.args.get("t")
-    if not t:
-        return jsonify(success=False, message="Missing token"), 400
-    try:
-        offer = decode_weekly_payload(t, current_app.config["JWT_SECRET_KEY"])
-        return jsonify(success=True, offer=offer)
-    except Exception as e:
-        return jsonify(success=False, message=str(e)), 400
 
 # ---------- Helpers ----------
 

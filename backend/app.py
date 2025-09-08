@@ -11,6 +11,7 @@ from flask_dance.contrib.github import make_github_blueprint, github
 from routes.user import user_bp
 import os
 from dotenv import load_dotenv
+import click
 
 
 
@@ -29,6 +30,9 @@ from api.hotel import hotel_bp
 from routes.weekly_routes import weekly_bp
 from routes.weekly_optin import weekly_optin_bp
 
+from api.weekly_generate import weekly_api_bp
+
+from api.weekly_job import run_weekly_dry_run, run_weekly_dispatch
 
 
 
@@ -90,25 +94,35 @@ from api.weekly_job import run_weekly_dry_run, run_weekly_dispatch
 
 app.register_blueprint(weekly_optin_bp)
 
+app.register_blueprint(weekly_api_bp)
+
 @app.cli.command("weekly-dry-run")
-def weekly_dry_run_cmd():
-    """Generate offer and show preview URL & recipient count (no emails sent)."""
-    out = run_weekly_dry_run(app)
+@click.option("--mode", default="llm", type=click.Choice(["auto","llm","basic"]), show_default=True)
+@click.option("--salt", default=None, help="Variability seed within the week")
+@click.option("--destination", default=None, help="Override destination (e.g., 'Rome, Italy')")
+@click.option("--duration", default=None, help="3..5 days")
+def weekly_dry_run_cmd(mode, salt, destination, duration):
+    out = run_weekly_dry_run(app, mode=mode, salt=salt, destination=destination, duration=duration)
     click.echo(out)
 
 @app.cli.command("weekly-send-one")
 @click.option("--email", required=True, help="Send Weekly to a single address.")
-def weekly_send_one_cmd(email):
-    """Send Weekly email to exactly one address (e2e test)."""
-    out = run_weekly_dispatch(app, only_email=email)
+@click.option("--mode", default="llm", type=click.Choice(["auto","llm","basic"]), show_default=True)
+@click.option("--salt", default=None, help="Variability seed within the week")
+@click.option("--destination", default=None)
+@click.option("--duration", default=None)
+def weekly_send_one_cmd(email, mode, salt, destination, duration):
+    out = run_weekly_dispatch(app, only_email=email, mode=mode, salt=salt, destination=destination, duration=duration)
     click.echo(out)
 
 @app.cli.command("weekly-run")
-def weekly_run_cmd():
-    """Send Weekly to all premium users with opt-in."""
-    out = run_weekly_dispatch(app)
+@click.option("--mode", default="llm", type=click.Choice(["auto","llm","basic"]), show_default=True)
+@click.option("--salt", default=None, help="Variability seed within the week")
+@click.option("--destination", default=None)
+@click.option("--duration", default=None)
+def weekly_run_cmd(mode, salt, destination, duration):
+    out = run_weekly_dispatch(app, mode=mode, salt=salt, destination=destination, duration=duration)
     click.echo(out)
-
 
 print("📍 Registered routes:")
 for rule in app.url_map.iter_rules():

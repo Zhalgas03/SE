@@ -6,6 +6,12 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from db import get_db_connection
 from utils.email_notify import send_email_notification
 
+# В самом верху файла после импортов
+print("[BOOT] STRIPE_SECRET_KEY set:", (os.getenv("STRIPE_SECRET_KEY") or "")[:6], "…")
+wh = os.getenv("STRIPE_WEBHOOK_SECRET") or ""
+print("[BOOT] STRIPE_WEBHOOK_SECRET set:", (wh[:10] + "…" + wh[-6:]) if wh else "<empty>")
+
+
 # ====== Stripe setup ======
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 stripe_bp = Blueprint("stripe_bp", __name__, url_prefix="/api/pay")

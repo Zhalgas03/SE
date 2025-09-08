@@ -48,9 +48,10 @@ EMAIL_TMPL_HTML = """
 """
 
 
-
-def _build_offer_links():
-    offer = generate_weekly_trip()
+def _build_offer_links(*, mode: str = "llm", salt: str | None = None,
+                       destination: str | None = None, duration: int | None = None):
+    # важно: пробрасываем параметры в generate_weekly_trip
+    offer = generate_weekly_trip(mode=mode, destination=destination, duration=duration, salt=salt)
 
     token = encode_weekly_payload(
         offer,
@@ -75,7 +76,7 @@ def _build_offer_links():
         offer=offer,
         preview_url=preview_url,
         base_url=base_url,
-        front_origin=front_origin,   # <-- добавили
+        front_origin=front_origin,
     )
 
     text = (
@@ -83,7 +84,7 @@ def _build_offer_links():
         f"{offer['summary']['destination']} — {offer['meta']['duration_days']} days\n\n"
         f"{offer['summary']['teaser']}\n\n"
         f"View trip: {preview_url}\n"
-        f"Turn off weekly emails: {front_origin}/account\n"   # <-- заменили
+        f"Turn off weekly emails: {front_origin}/account\n"
     )
 
     return offer, subject, html, text, preview_url, week_label
@@ -97,18 +98,19 @@ def _select_recipients():
             cur.execute("""
                 SELECT email
                 FROM users
-                WHERE role='premium' AND weekly_trip_opt_in=true AND email IS NOT NULL
+                WHERE role = 'premium'
+                  AND is_subscribed = true
+                  AND weekly_trip_opt_in = true
+                  AND email IS NOT NULL
             """)
             fetched = cur.fetchall() or []
             for r in fetched:
-                # RealDictCursor -> dict, обычный -> tuple
                 emails.append(r["email"] if isinstance(r, dict) else r[0])
     except OperationalError as e:
         current_app.logger.error(f"[WEEKLY] DB connect failed: {e}")
     except Exception as e:
         current_app.logger.error(f"[WEEKLY] recipients query failed: {e}")
 
-    # DEV fallback, если никого не нашли
     if not emails:
         dev = os.getenv("DEV_TEST_EMAIL")
         if dev:
@@ -117,33 +119,44 @@ def _select_recipients():
 
     return emails
 
-def _send_email(to: str, subject: str, html: str, text: str, sender: str | None):
-    """
-    Обёртка под разные сигнатуры send_email_notification.
-    Пытаемся несколько вариантов, чтобы не падать на несовпадении параметров.
-    """
-    try:
-        return send_email_notification(to=to, subject=subject, html=html, text=text, sender=sender)
-    except TypeError:
-        try:
-            return send_email_notification(to, subject, html, text, sender)
-        except TypeError:
-            try:
-                # минималка: только текст
-                return send_email_notification(to, subject, text)
-            except Exception:
-                raise
 
-def run_weekly_dry_run(app):
+# def send_email_to_address(to: str, subject: str, html: str, text: str, sender: str | None):
+#     """
+#     Обёртка под разные сигнатуры send_email_notification.
+#     Пытаемся несколько вариантов, чтобы не падать на несовпадении параметров.
+#     """
+#     try:
+#         return send_email_notification(to=to, subject=subject, html=html, text=text, sender=sender)
+#     except TypeError:
+#         try:
+#             return send_email_notification(to, subject, html, text, sender)
+#         except TypeError:
+#             try:
+#                 # минималка: только текст
+#                 return send_email_notification(to, subject, text)
+#             except Exception:
+#                 raise
+
+def run_weekly_dry_run(app, *, mode: str = "llm", salt: str | None = None,
+                       destination: str | None = None, duration: int | None = None):
     with app.app_context():
-        offer, subject, html, text, preview_url, week_label = _build_offer_links()
+        offer, subject, html, text, preview_url, week_label = _build_offer_links(
+            mode=mode, salt=salt, destination=destination, duration=duration
+        )
         recips = _select_recipients()
         return {"ok": True, "mode": "dry", "recipients": len(recips), "preview_url": preview_url, "subject": subject}
+    
 
-def run_weekly_dispatch(app, only_email: str | None = None):
+
+
+def run_weekly_dispatch(app, only_email: str | None = None, *,
+                        mode: str = "llm", salt: str | None = None,
+                        destination: str | None = None, duration: int | None = None):
     with app.app_context():
         try:
-            offer, subject, html, text, preview_url, week_label = _build_offer_links()
+            offer, subject, html, text, preview_url, week_label = _build_offer_links(
+                mode=mode, salt=salt, destination=destination, duration=duration
+            )
         except Exception as e:
             return {"ok": False, "error": f"generation failed: {e}"}
 

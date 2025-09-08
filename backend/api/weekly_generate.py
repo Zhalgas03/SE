@@ -6,7 +6,8 @@ import datetime as dt
 import requests
 from flask import Blueprint, request, jsonify
 
-weekly_bp = Blueprint("weekly", __name__, url_prefix="/api/weekly")
+# УНИКАЛЬНОЕ имя блюпринта под /api/weekly
+weekly_api_bp = Blueprint("weekly_api", __name__, url_prefix="/api/weekly")
 
 # ---------- данные ----------
 DESTS = [
@@ -19,14 +20,59 @@ DESTS = [
     ("Vienna, Austria", "Imperial elegance, coffeehouses, waltz."),
 ]
 
-def _week_seed():
+def _week_seed(salt: str | None = None):
     today = dt.date.today()
     year, week, _ = today.isocalendar()
-    return f"{year}-{week}"
+    return f"{year}-{week}-{salt or ''}"
+
+# ---------- LLM system message ----------
+_LLM_SYSTEM = {
+    "role": "system",
+    "content": """
+You are a travel content generator that outputs STRICT JSON ONLY (no markdown, no comments).
+Goal: produce a weekly "Trip of the Week" object in the exact JSON schema below. Do not include extra keys.
+
+Schema:
+{
+  "meta": {
+    "title": "Trip of the Week",
+    "generated_at": "<UTC ISO8601 with Z>",
+    "duration_days": <integer 3..5>
+  },
+  "summary": {
+    "destination": "<City, Country>",
+    "dates_text": "<X days (flexible)>",
+    "teaser": "<short catchy one-line teaser>"
+  },
+  "flights": [],
+  "hotels": [],
+  "itinerary": [
+    {
+      "day": <1-based integer>,
+      "title": "<string>",
+      "items": [
+        {"time":"HH:MM","place_name":"<string>","notes":"<string or empty>"}
+      ]
+    }
+  ],
+  "tips": ["<string>", "<string>"]
+}
+
+Hard rules:
+- Output valid JSON (no trailing commas, no comments).
+- Exactly the keys shown above, nothing else.
+- "generated_at" must be UTC ISO8601 with trailing 'Z'.
+- duration_days must be 3..5 inclusive.
+- itinerary must have exactly duration_days entries, day = 1..duration_days.
+- Each itinerary day must have 2–4 items with realistic times.
+- Be specific with place_name (real sights/areas/foods). Avoid generic words.
+- Keep flights and hotels arrays as empty lists for now.
+"""
+}
 
 # ---------- BASIC ----------
-def _generate_basic(destination=None, teaser=None, duration=None):
-    rnd = random.Random(_week_seed())
+def _generate_basic(destination=None, teaser=None, duration=None, *, salt: str | None = None):
+    rnd = random.Random(_week_seed(salt))
 
     if destination is None or teaser is None:
         d, t = rnd.choice(DESTS)
@@ -86,57 +132,13 @@ def _generate_basic(destination=None, teaser=None, duration=None):
     }
 
 # ---------- LLM (Perplexity) ----------
-_LLM_SYSTEM = {
-    "role": "system",
-    "content": """
-You are a travel content generator that outputs STRICT JSON ONLY (no markdown, no comments).
-Goal: produce a weekly "Trip of the Week" object in the exact JSON schema below. Do not include extra keys.
-
-Schema:
-{
-  "meta": {
-    "title": "Trip of the Week",
-    "generated_at": "<UTC ISO8601 with Z>",
-    "duration_days": <integer 3..5>
-  },
-  "summary": {
-    "destination": "<City, Country>",
-    "dates_text": "<X days (flexible)>",
-    "teaser": "<short catchy one-line teaser>"
-  },
-  "flights": [],
-  "hotels": [],
-  "itinerary": [
-    {
-      "day": <1-based integer>,
-      "title": "<string>",
-      "items": [
-        {"time":"HH:MM","place_name":"<string>","notes":"<string or empty>"}
-      ]
-    }
-  ],
-  "tips": ["<string>", "<string>"]
-}
-
-Hard rules:
-- Output valid JSON (no trailing commas, no comments).
-- Exactly the keys shown above, nothing else.
-- "generated_at" must be UTC ISO8601 with trailing 'Z'.
-- duration_days must be 3..5 inclusive.
-- itinerary must have exactly duration_days entries, day = 1..duration_days.
-- Each itinerary day must have 2–4 items with realistic times.
-- Be specific with place_name (real sights/areas/foods). Avoid generic words.
-- Keep flights and hotels arrays as empty lists for now.
-"""
-}
-
-def _perplexity_generate(destination, duration_days, api_key):
+def _perplexity_generate(destination, duration_days, api_key, *, salt: str | None = None):
     user_prompt = f"""
 Generate the STRICT JSON object for Trip of the Week using the schema.
 Destination: {destination}
 Duration days: {duration_days}
-Seed: {_week_seed()}
-Remember: output JSON only. No markdown. No comments.
+Salt: {salt or ""}
+Output JSON only. No markdown. No comments.
 """.strip()
 
     headers = {
@@ -145,8 +147,8 @@ Remember: output JSON only. No markdown. No comments.
     }
     body = {
         "model": "sonar",
-        "temperature": 0,
-        "top_p": 1,
+        "temperature": 0.7,   # вариативность
+        "top_p": 0.95,
         "messages": [
             _LLM_SYSTEM,
             {"role": "user", "content": user_prompt},
@@ -176,14 +178,15 @@ Remember: output JSON only. No markdown. No comments.
     return data
 
 # ---------- Публичная функция ----------
-def generate_weekly_trip(mode="auto", destination=None, duration=None, api_key=None):
+def generate_weekly_trip(mode="auto", destination=None, duration=None, api_key=None, *, salt: str | None = None):
     """
     :param mode: "auto" | "llm" | "basic"
     :param destination: str | None
     :param duration: int 3..5 | None
-    :param api_key: str | None (если None — возьмём PERPLEXITY_API_KEY)
+    :param api_key: str | None (если None — PERPLEXITY_API_KEY)
+    :param salt: str | None (вариативность внутри недели)
     """
-    # нормализуем вход
+    # нормализуем duration
     if duration is not None:
         try:
             duration = int(duration)
@@ -192,35 +195,37 @@ def generate_weekly_trip(mode="auto", destination=None, duration=None, api_key=N
     if duration is not None:
         duration = max(3, min(5, duration))
 
-    seed_rnd = random.Random(_week_seed())
+    seed_rnd = random.Random(_week_seed(salt))
     if not destination:
         destination = seed_rnd.choice([d for d, _ in DESTS])
 
+    # BASIC
     if mode == "basic":
         teaser = next((t for d, t in DESTS if d == destination), None)
-        return _generate_basic(destination=destination, teaser=teaser, duration=duration)
+        return _generate_basic(destination=destination, teaser=teaser, duration=duration, salt=salt)
 
-    # auto/llm
+    # LLM / AUTO
     key = api_key or os.getenv("PERPLEXITY_API_KEY")
     if mode == "llm" or (mode == "auto" and key):
         try:
             dur = duration or seed_rnd.choice([3, 4, 5])
-            return _perplexity_generate(destination, dur, key)
+            return _perplexity_generate(destination, dur, key, salt=salt)
         except Exception as e:
             # Фоллбэк на basic
             print("Perplexity failed, fallback to basic:", e)
 
     teaser = next((t for d, t in DESTS if d == destination), None)
-    return _generate_basic(destination=destination, teaser=teaser, duration=duration)
+    return _generate_basic(destination=destination, teaser=teaser, duration=duration, salt=salt)
 
 # ---------- HTTP эндпоинт ----------
-@weekly_bp.route("", methods=["GET"])
+@weekly_api_bp.route("", methods=["GET"])
 def get_weekly_trip():
     """
-    GET /api/weekly?mode=auto|llm|basic&destination=Rome,%20Italy&duration=4
+    GET /api/weekly?mode=auto|llm|basic&destination=Rome,%20Italy&duration=4&salt=foo
     """
     mode = (request.args.get("mode") or "auto").lower()
     destination = request.args.get("destination") or None
     duration = request.args.get("duration") or None
-    data = generate_weekly_trip(mode=mode, destination=destination, duration=duration)
-    return jsonify(success=True, mode=mode, seed=_week_seed(), data=data)
+    salt = request.args.get("salt") or None
+    data = generate_weekly_trip(mode=mode, destination=destination, duration=duration, salt=salt)
+    return jsonify(success=True, mode=mode, seed=_week_seed(salt), data=data)

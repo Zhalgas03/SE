@@ -9,7 +9,7 @@ from typing import Any, Dict
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import requests
 import os
-from utils.email_notify import generate_2fa_code, send_email_notification
+from utils.email_notify import generate_2fa_code, send_email_to_address
 from datetime import datetime, timedelta, timezone
 from flask_dance.contrib.github import make_github_blueprint, github   
 from flask import redirect, url_for, jsonify
@@ -126,7 +126,7 @@ def login():
                     # 2FA включена → отправляем код
                     code = generate_2fa_code()
                     expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
-                    send_email_notification(email, "2FA Verification Code", f"Your verification code is: {code}")
+                    send_email_to_address(to_email=email, subject="2FA Verification Code", text=f"Your verification code is: {code}")
 
                     cur.execute("""
                         INSERT INTO email_2fa_codes (email, code, expires_at)

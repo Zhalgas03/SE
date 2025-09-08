@@ -123,7 +123,7 @@ function AdminPanelPage() {
         🛠️ Welcome, admin!
       </h1>
 
-      {loading && <div style={{ fontSize: 20 }}>Загрузка...</div>}
+      {loading && <div style={{ fontSize: 20 }}>Loading...</div>}
       {error && <div style={{ color: "red", padding: 12 }}>{error}</div>}
 
       {/* Users */}

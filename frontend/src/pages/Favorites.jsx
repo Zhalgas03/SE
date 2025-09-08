@@ -1,12 +1,15 @@
+// Favorites.jsx
 import React, { useCallback, useEffect, useState } from "react";
 import TripOfTheWeek from "../components/TripOfTheWeek";
 import SavedTrips from "../components/SavedTrips";
+import { useUser } from "../context/UserContext"; // 👈
 
 const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5001";
 
 export default function Favorites() {
   const [trips, setTrips] = useState([]);
   const [loadingTrips, setLoadingTrips] = useState(true);
+  const { isPremium } = useUser(); // 👈
 
   const refreshTrips = useCallback(async () => {
     setLoadingTrips(true);
@@ -15,11 +18,7 @@ export default function Favorites() {
         headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
       });
       const data = await res.json();
-      if (data?.success) {
-        setTrips((data.trips || []).filter((t) => t.pdf_file_path));
-      } else {
-        console.warn("Failed to load trips");
-      }
+      if (data?.success) setTrips((data.trips || []).filter((t) => t.pdf_file_path));
     } catch (e) {
       console.error("favorites fetch failed", e);
     } finally {
@@ -31,12 +30,14 @@ export default function Favorites() {
 
   return (
     <div className="container fav-container">
-      {/* TripOfTheWeek больше НЕ ходит за /favorites — берёт список отсюда */}
-      <TripOfTheWeek
-        apiBase={API_BASE}
-        trips={trips}
-        onSaved={refreshTrips}   // после сохранения — обновить список
-      />
+      {/* Премиум-гейт: показываем баннер только премиум-юзерам */}
+      {isPremium && (
+        <TripOfTheWeek
+          apiBase={API_BASE}
+          trips={trips}
+          onSaved={refreshTrips}
+        />
+      )}
       <SavedTrips
         apiBase={API_BASE}
         trips={trips}
