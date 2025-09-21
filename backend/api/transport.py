@@ -9,6 +9,25 @@ transport_bp = Blueprint("transport", __name__, url_prefix="/api/transport")
 AMADEUS_CLIENT_ID = os.getenv("AMADEUS_CLIENT_ID")
 AMADEUS_CLIENT_SECRET = os.getenv("AMADEUS_CLIENT_SECRET")
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
+import time
+
+def _http_with_retry(method, url, *, headers=None, params=None, data=None, timeout=15, max_retries=2):
+    """Лёгкий ретрай: 429/5xx -> подождать и повторить один-два раза."""
+    for attempt in range(max_retries + 1):
+        resp = requests.request(method, url, headers=headers, params=params, data=data, timeout=timeout)
+        if resp.status_code == 429 or 500 <= resp.status_code < 600:
+            if attempt == max_retries:
+                resp.raise_for_status()
+            # уважаем Retry-After, иначе бэкофф 1s, 2s...
+            ra = resp.headers.get("Retry-After")
+            try:
+                wait = float(ra)
+            except Exception:
+                wait = 1.0 * (2 ** attempt)
+            time.sleep(min(wait, 5.0))
+            continue
+        return resp
+    return resp  # не должно дойти
 
 # простейший кэш токена Amadeus в памяти
 _amadeus_token = {"token": None, "exp": None}
@@ -322,5 +341,4 @@ def get_transport():
                   "origin_code": orig_code, "dest_code": dest_code},
         "options": options
     }), 200
-
 

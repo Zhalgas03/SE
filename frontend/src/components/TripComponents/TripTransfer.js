@@ -18,12 +18,21 @@ function extractFromToFromText(text = "") {
 
 function toCityName(place = "") {
   if (!place) return null;
-  let s = place.replace(/\(.*?\)/g, " ");
+  let s = String(place);
+
+  // убрать обрамляющие кавычки/двоеточия (артефакты от кривых источников)
+  s = s.replace(/^[\s:"']+/, "").replace(/["']+$/, "");
+
+  // выкусить только первую "часть" без скобок/добавок
+  s = s.replace(/\(.*?\)/g, " ");
   s = s.split(" / ")[0].split(" - ")[0];
   s = s.split(",")[0];
-  const raw = s.trim().replace(/\s+/g, " ");
-  return raw || null;
+
+  s = s.trim().replace(/\s+/g, " ");
+  return s || null;
 }
+
+
 
 function parseDateRangeSmart(dates) {
   if (!dates) return { start: null, end: null };
@@ -57,13 +66,35 @@ function prettyISO(iso) {
   return iso.replace(/^PT/, "").replace(/H/, "h ").replace(/M/, "m").replace(/S/, "s").trim();
 }
 
-// markdown “Departure City: …”
-function findDepartureInSummary(any) {
-  const s = (typeof any === "string" ? any : JSON.stringify(any)) || "";
-  const m = s.match(/Departure\s*City[:*]*\s*([A-Za-zÀ-ÖØ-öø-ÿ'’\-.\s]+)/i);
-  return m ? toCityName(m[1]) : null;
-}
+function findFieldInSummary(summary, label) {
+  if (!summary) return null;
 
+  // 1) прямые поля (ключи в объекте)
+  const keyMap = {
+    "Destination": ["destination", "Destination", "to"],
+    "Departure City": ["departure_city", "departureCity", "from"]
+  };
+  const keys = keyMap[label] || [];
+  for (const k of keys) {
+    const v = summary?.[k];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+
+  // 2) ищем по markdown-текстам (берём только строковые значения)
+  const textBlob = Object.values(summary)
+    .filter(v => typeof v === "string")
+    .join("\n")
+    .replace(/\*\*/g, "");              // убираем жирные **
+
+  // Паттерн: "Destination: Paris" или "Destination — Paris"
+  const re = new RegExp(`${label}\\s*[:\\-–—]*\\s*([^\\n\\r|]+)`, "i");
+  const m = textBlob.match(re);
+  if (m && m[1]) return m[1].trim();
+
+  return null;
+}
+const findDepartureInSummary = (any) => findFieldInSummary(any, "Departure City");
+const findDestinationInSummary = (any) => findFieldInSummary(any, "Destination");
 /* --- airline visuals --- */
 function carrierFromSegment(seg) {
   // "VY 6253" -> "VY"
@@ -124,63 +155,65 @@ function AirlineAvatar({ code }) {
 function useTransportLeg(fromCity, toCity, date) {
   const [state, setState] = useState({ loading: false, options: [], error: null });
   useEffect(() => {
-    if (!fromCity || !toCity || !date) {
-      setState({ loading: false, options: [], error: null });
-      return;
+  if (!fromCity || !toCity) {
+    setState({ loading: false, options: [], error: null });
+    return;
+  }
+
+  const controller = new AbortController();
+  (async () => {
+    try {
+      setState({ loading: true, options: [], error: null });
+
+      // если дата не пришла — подставляем сегодня (можешь заменить на +1 день)
+      const dateToUse = date || new Date().toISOString().slice(0, 10);
+
+      const qs = new URLSearchParams({ from: fromCity, to: toCity, date: dateToUse }).toString();
+      const res = await fetch(`${API_BASE}/api/transport?${qs}`, { signal: controller.signal });
+      const data = await res.json();
+      const ok = data?.success && Array.isArray(data?.options);
+      setState({ loading: false, options: ok ? data.options : [], error: ok ? null : "no_data" });
+    } catch (e) {
+      if (e.name !== "AbortError") setState({ loading: false, options: [], error: String(e) });
     }
-    const controller = new AbortController();
-    (async () => {
-      try {
-        setState({ loading: true, options: [], error: null });
-        const qs = new URLSearchParams({ from: fromCity, to: toCity, date }).toString();
-        const res = await fetch(`${API_BASE}/api/transport?${qs}`, { signal: controller.signal });
-        const data = await res.json();
-        const ok = data?.success && Array.isArray(data?.options);
-        setState({ loading: false, options: ok ? data.options : [], error: ok ? null : "no_data" });
-      } catch (e) {
-        if (e.name !== "AbortError") setState({ loading: false, options: [], error: String(e) });
-      }
-    })();
-    return () => controller.abort();
-  }, [fromCity, toCity, date]);
+  })();
+
+  return () => controller.abort();
+}, [fromCity, toCity, date]);
 
   return state;
 }
 
 /* ---------------- component ---------------- */
 export default function TripTransfer({ summary }) {
-  const transfers = Array.isArray(summary?.transfers) ? summary.transfers : [];
-  const transferText = [transfers[0]?.route, transfers[0]?.details].filter(Boolean).join(" ");
-  const parsed = extractFromToFromText(transferText);
-  const hasReturnWord = /\b(back|return)\b/i.test(transferText);
+const transfers = Array.isArray(summary?.transfers) ? summary.transfers : [];
+// Не парсим текст со стрелками — используем только поля/лейблы
+const parsed = { from: null, to: null };
 
-  const tripCity = toCityName(summary?.destination || summary?.Destination || parsed.to) || null;
+// 1) Даты
+const range = useMemo(
+  () => parseDateRangeSmart(summary?.travel_dates || summary?.Dates),
+  [summary]
+);
+const startDate = range.start || null;
+const endDate   = range.end   || null;
 
-  let departCity =
-    toCityName(summary?.departure_city || summary?.departureCity || summary?.from) ||
-    findDepartureInSummary(summary) ||
-    null;
+// 2) Города: сначала явные поля, затем markdown-лейблы из строковых полей
+const destination =
+  toCityName(
+    summary?.destination ||
+    summary?.Destination ||
+    findFieldInSummary(summary, "Destination")
+  ) || null;
 
-  if (!departCity && hasReturnWord && tripCity && parsed.from && parsed.to) {
-    const fromCity = toCityName(parsed.from);
-    const toCity = toCityName(parsed.to);
-    if (fromCity && toCity && fromCity.toLowerCase() === tripCity.toLowerCase()) {
-      departCity = toCity;
-    }
-  }
-  if (!departCity && parsed.from) departCity = toCityName(parsed.from);
+const origin =
+  toCityName(
+    summary?.departure_city ||
+    summary?.departureCity ||
+    summary?.from ||
+    findFieldInSummary(summary, "Departure City")
+  ) || null;
 
-  const ensuredTripCity = tripCity || toCityName(parsed.to) || null;
-
-  const range = useMemo(
-    () => parseDateRangeSmart(summary?.travel_dates || summary?.Dates),
-    [summary]
-  );
-  const startDate = range.start || null;
-  const endDate = range.end || null;
-
-  const origin = departCity || null;
-  const destination = ensuredTripCity || null;
 
   const outLeg = useTransportLeg(origin, destination, startDate);
   const retLeg = useTransportLeg(destination, origin, endDate);
@@ -188,7 +221,9 @@ export default function TripTransfer({ summary }) {
   /* --- Omio-like option card (flight/car aware) --- */
   function OptionCard({ o }) {
     const isFlight = o.mode === "flight";
-    const isCar = o.mode === "car";
+    const isCar    = o.mode === "car";
+    const isBus    = o.mode === "bus";
+
     const dur = prettyISO(o.duration);
 
     const firstSeg = o?.segments?.[0];
@@ -234,10 +269,13 @@ export default function TripTransfer({ summary }) {
           <div className="omio-left">
             {isFlight ? (
               <span style={{fontSize:18}}>✈️</span>
+            ) : isBus ? (
+              <span style={{fontSize:18}}>🚌</span>
             ) : (
               <span style={{ fontSize: 18 }}>🚗</span>
             )}
           </div>
+
 
           <div className="omio-mid">
             <div className="omio-times">
@@ -247,20 +285,29 @@ export default function TripTransfer({ summary }) {
             </div>
 
             <div className="omio-sub">
-              {isFlight ? (
-                <>
-                  <span>{firstSeg?.from || "—"} • {depD || ""}</span>
-                  <span className="mx-2">→</span>
-                  <span>{lastSeg?.to || "—"} • {arrD || ""}</span>
-                  <span className="omio-badge ms-2">{stops > 0 ? `${stops} transfer(s)` : "Direct"}</span>
-                </>
-              ) : (
-                <>
-                  <span>Driving route</span>
-                  <span className="mx-2">•</span>
-                  <span className="text-muted">{o.note || "Approx. route"}</span>
-                </>
-              )}
+                {isFlight ? (
+                  <>
+                    <span>{firstSeg?.from || "—"} • {depD || ""}</span>
+                    <span className="mx-2">→</span>
+                    <span>{lastSeg?.to || "—"} • {arrD || ""}</span>
+                    <span className="omio-badge ms-2">{stops > 0 ? `${stops} transfer(s)` : "Direct"}</span>
+                  </>
+                ) : isBus ? (
+                  <>
+                    <span>{firstSeg?.from || "—"} • {depD || ""}</span>
+                    <span className="mx-2">→</span>
+                    <span>{lastSeg?.to || "—"} • {arrD || ""}</span>
+                    <span className="omio-badge ms-2">FlixBus</span>
+                    <span className="omio-badge ms-1">{stops > 0 ? `${stops} transfers` : "Direct"}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Driving route</span>
+                    <span className="mx-2">•</span>
+                    <span className="text-muted">{o.note || "Approx. route"}</span>
+                  </>
+                )}
+
             </div>
           </div>
 
@@ -312,18 +359,24 @@ export default function TripTransfer({ summary }) {
         <h5 className="fw-bold mb-1">Transfer &amp; Transportation</h5>
 
         {Array.isArray(transfers) && transfers.length > 0 ? (
-          transfers.map((tr, i) => (
-            <div key={i} className="mb-3">
-              <div className="fw-semibold">{tr.route}</div>
-              <div className="text-muted small ms-4" style={{ whiteSpace: "pre-wrap" }}>
-                {tr.details}
-              </div>
-            </div>
-          ))
-        ) : (
-          <p className="text-muted mb-2">No transfer info provided.</p>
+  transfers
+    .filter(tr => {
+      const r = String(tr?.route || "");
+      return /→|->|from\s+.+\s+to\s+/i.test(r);
+    })
+    .map((tr, i) => (
+      <div key={i} className="mb-3">
+        <div className="fw-semibold">{tr.route}</div>
+        {tr.details && (
+          <div className="text-muted small ms-4" style={{ whiteSpace: "pre-wrap" }}>
+            {tr.details}
+          </div>
         )}
-
+      </div>
+    ))
+) : (
+  <p className="text-muted mb-2">No transfer info provided.</p>
+)}
         <Leg title="Outbound" from={origin} to={destination} date={startDate} state={outLeg} />
         <Leg title="Return"   from={destination} to={origin} date={endDate}   state={retLeg} />
       </Card.Body>

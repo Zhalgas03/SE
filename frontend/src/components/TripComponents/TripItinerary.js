@@ -46,7 +46,7 @@ function TripItinerary({ summary, isGeneratingPDF }) {
         {intro && <p className="it-intro">{intro}</p>}
 
         {!isGeneratingPDF && coordinates.length > 0 && (
-          <div className="rounded-3 it-map" style={{ height: '260px' }}>
+          <div className="rounded-3 it-map mb-5" style={{ height: '260px' }}>
             <MapPreview coordinates={coordinates} />
           </div>
         )}

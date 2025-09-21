@@ -65,23 +65,24 @@ function parseTripSummary(text = "") {
   const t = text.replace(/\r/g, "");
 
   const destinationMatch = t.match(/\*\*Destination:\*\*\s*(.+)/i);
-  const datesMatch = t.match(/\*\*Dates:\*\*\s*(.+)/i);
-  const overviewMatch = t.match(/####\s*Overview\s*([\s\S]*?)(?:\n####|$)/i);
+  const departureMatch   = t.match(/\*\*Departure City:\*\*\s*(.+)/i);
+  const datesMatch       = t.match(/\*\*Dates:\*\*\s*(.+)/i);
+  const overviewMatch    = t.match(/####\s*Overview\s*([\s\S]*?)(?:\n####|$)/i);
 
   const highlightsMatch = t.match(/####\s*Highlights\s*([\s\S]*?)(?:\n####|$)/i);
   const highlights = highlightsMatch
     ? highlightsMatch[1]
         .split("\n")
-        .map((line) => line.replace(/^[-*]\s*/, "").trim())
+        .map(line => line.replace(/^[-*]\s*/, "").trim())
         .filter(Boolean)
     : [];
 
-  // Берём всё между "#### Itinerary" и следующим заголовком/концом
   const itineraryMatch = t.match(/####\s*Itinerary\s*([\s\S]*?)(?:\n####|$)/i);
   const itinerary = itineraryMatch ? parseItineraryMarkdown(itineraryMatch[1]) : [];
 
   return {
     destination: destinationMatch?.[1]?.trim() || null,
+    departure_city: departureMatch?.[1]?.trim() || null,   // 👈 добавляем
     travel_dates: datesMatch?.[1]?.trim() || null,
     overview: overviewMatch?.[1]?.trim() || "",
     highlights,
