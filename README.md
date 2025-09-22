@@ -115,8 +115,8 @@ BASE_URL=
 ## Contributors
 
 
-- Tairbek Akhayev — Frontend & Scrum Master
-- Zhalgas Abylkassymov — Backend & Integrations
+- Tairbek Akhayev — Backend
+- Zhalgas Abylkassymov — Frontend
 
 ---
 
