@@ -40,7 +40,7 @@ Trip DVisor is an **AI-powered travel planning platform** that turns your prefer
 
 ## Screenshots
 
-![Planner Chat](screenshots/planner_chat.png)
+![Home Page](screenshots/desktop/Screenshot 2025-08-22 at 14.29.46.png)
 ![Trip Overview](screenshots/trip_overview.png)
 ![Admin Panel](screenshots/admin_panel.png)
 ![Stripe Checkout](screenshots/stripe_checkout.png)
