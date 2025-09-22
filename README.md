@@ -4,7 +4,7 @@ Trip DVisor is an **AI-powered travel planning platform** that turns your prefer
 
 ---
 
-## ✨ Features
+## Features
 
 - **Conversational AI planner**: interactive chat that collects trip preferences step-by-step and generates a structured, day-by-day itinerary (overview, highlights, daily plan, return trip).
 - **PDF export**: save trips offline in a formatted PDF.
@@ -28,7 +28,7 @@ Trip DVisor is an **AI-powered travel planning platform** that turns your prefer
 
 ---
 
-## 🧱 Tech stack
+## Tech stack
 
 - **Frontend:** React (SPA) with Framer Motion, Mapbox, Stripe, jsPDF/html2canvas
 - **Backend:** Flask (Python) with Blueprints, JWT auth, Flask-Dance (OAuth)
@@ -38,7 +38,7 @@ Trip DVisor is an **AI-powered travel planning platform** that turns your prefer
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 ![Planner Chat](screenshots/planner_chat.png)
 ![Trip Overview](screenshots/trip_overview.png)
@@ -47,7 +47,7 @@ Trip DVisor is an **AI-powered travel planning platform** that turns your prefer
 
 ---
 
-## 🚀 Getting started (local)
+## Getting started (local)
 
 ### Prerequisites
 - Python 3.10+
@@ -57,10 +57,68 @@ Trip DVisor is an **AI-powered travel planning platform** that turns your prefer
 ### Backend
 
 ```bash
-cd backend
+
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1   # Windows PowerShell
 pip install -r ../requirements.txt
 
-# create backend/.env (see example below)
+cd backend
 python app.py
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+### Example .env
+
+```bash
+FLASK_SECRET_KEY=
+JWT_SECRET_KEY=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+PERPLEXITY_API_KEY=
+TRAVELPAYOUTS_TOKEN=
+
+REDIRECT_URI=
+
+EMAIL_SENDER=
+EMAIL_PASSWORD=
+EMAIL_FROM=
+
+GITHUB_OAUTH_CLIENT_ID=
+GITHUB_OAUTH_CLIENT_SECRET=
+
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+
+AMADEUS_CLIENT_ID=
+AMADEUS_CLIENT_SECRET=
+GOOGLE_MAPS_API_KEY=
+
+HOTELBEDS_API_KEY=
+HOTELBEDS_SECRET=
+
+DATABASE_URL=
+BASE_URL=
+
+```
+
+
+---
+
+## Contributors
+
+
+Tairbek Akhayev — Frontend & Scrum Master
+Zhalgas Abylkassymov — Backend & Integrations
+
+---
+
+
+
